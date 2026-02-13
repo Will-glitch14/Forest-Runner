@@ -129,6 +129,42 @@ FR.Shop.save = function () {
     } catch (e) {}
 };
 
+// ---- Settings (volume + key bindings) ----
+FR.Settings = {
+    volume: 1.0,
+    bindings: {
+        moveLeft:  ['ArrowLeft', 'KeyA'],
+        moveRight: ['ArrowRight', 'KeyD'],
+        jump:      ['ArrowUp', 'KeyW', 'Space'],
+        slide:     ['ArrowDown', 'KeyS'],
+    }
+};
+
+(function () {
+    try {
+        var saved = JSON.parse(localStorage.getItem('fr_settings') || 'null');
+        if (saved) {
+            if (typeof saved.volume === 'number') FR.Settings.volume = saved.volume;
+            if (saved.bindings) {
+                for (var k in saved.bindings) {
+                    if (FR.Settings.bindings[k] && Array.isArray(saved.bindings[k])) {
+                        FR.Settings.bindings[k] = saved.bindings[k];
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+})();
+
+FR.Settings.save = function () {
+    try {
+        localStorage.setItem('fr_settings', JSON.stringify({
+            volume: FR.Settings.volume,
+            bindings: FR.Settings.bindings
+        }));
+    } catch (e) {}
+};
+
 // ---- Shared object containers ----
 FR.obsList   = [];
 FR.coinList  = [];

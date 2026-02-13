@@ -412,6 +412,121 @@
             border-color: rgba(255,255,255,0.5);
         }
 
+        /* ---- Settings Screen ---- */
+        #settings-screen {
+            background: radial-gradient(ellipse at 50% 40%, rgba(10,50,20,0.94), rgba(4,18,8,0.98));
+            overflow-y: auto;
+            padding: 30px 20px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        #settings-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 48px;
+            color: #5cb85c;
+            text-shadow: 0 0 30px rgba(80,180,80,0.3);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+        }
+        .settings-section {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 22px;
+        }
+        .settings-label {
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .settings-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .settings-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.15);
+            outline: none;
+        }
+        .settings-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #5cb85c;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .settings-slider::-moz-range-thumb {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #5cb85c;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .settings-vol-val {
+            font-size: 16px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            min-width: 44px;
+            text-align: right;
+        }
+        .settings-control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .settings-action {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 1px;
+        }
+        .settings-keys {
+            display: flex;
+            gap: 6px;
+        }
+        .settings-key {
+            padding: 5px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.7);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: border-color 0.15s, background 0.15s;
+            min-width: 36px;
+            text-align: center;
+        }
+        .settings-key:hover {
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.12);
+        }
+        .settings-key.listening {
+            border-color: #5cb85c;
+            background: rgba(92,184,92,0.2);
+            animation: pulse 1s ease-in-out infinite;
+        }
+        .settings-hint {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 10px;
+            text-align: center;
+        }
+
         /* Flash overlay */
         #flash {
             position: absolute; inset: 0;
@@ -469,6 +584,7 @@
             <div class="prompt">Press SPACE to Run</div>
             <div class="screen-btns">
                 <button class="screen-btn" id="start-shop-btn">Shop</button>
+                <button class="screen-btn" id="start-settings-btn">Settings</button>
             </div>
             <div class="active-powerups" id="start-powerups"></div>
         </div>
@@ -482,6 +598,7 @@
             <div class="prompt go-prompt">Press SPACE to Try Again</div>
             <div class="screen-btns">
                 <button class="screen-btn" id="go-shop-btn">Shop</button>
+                <button class="screen-btn" id="go-settings-btn">Settings</button>
                 <button class="screen-btn" id="go-home-btn">Home</button>
             </div>
         </div>
@@ -495,6 +612,31 @@
             <div class="shop-section-title">Outfits</div>
             <div class="shop-grid" id="shop-cosmetics"></div>
             <button class="shop-back-btn" id="shop-back">Back</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen hidden">
+            <h1>SETTINGS</h1>
+
+            <div class="settings-section">
+                <div class="settings-label">Volume</div>
+                <div class="settings-slider-row">
+                    <input type="range" id="vol-slider" min="0" max="100" value="100" class="settings-slider">
+                    <span id="vol-value" class="settings-vol-val">100%</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Controls</div>
+                <div id="settings-controls"></div>
+                <div class="settings-hint">Click a key then press a new key to rebind</div>
+            </div>
+
+            <div class="settings-section" style="text-align:center;">
+                <button class="screen-btn" id="settings-reset">Reset Defaults</button>
+            </div>
+
+            <button class="shop-back-btn" id="settings-back">Back</button>
         </div>
     </div>
 

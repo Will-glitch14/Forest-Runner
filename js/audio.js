@@ -214,5 +214,9 @@ FR.Audio = (function () {
         ambGain.gain.value = 0.06 + t * 0.06;
     }
 
-    return { init: init, play: play, updateSteps: updateSteps, updateAmbient: updateAmbient };
+    function setVolume(v) {
+        if (masterGain) masterGain.gain.value = v;
+    }
+
+    return { init: init, play: play, updateSteps: updateSteps, updateAmbient: updateAmbient, setVolume: setVolume };
 })();

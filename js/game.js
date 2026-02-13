@@ -33,8 +33,19 @@
         startShopBtn: document.getElementById('start-shop-btn'),
         goShopBtn:  document.getElementById('go-shop-btn'),
         goHomeBtn:  document.getElementById('go-home-btn'),
+        settingsScr:  document.getElementById('settings-screen'),
+        settingsBack: document.getElementById('settings-back'),
+        settingsReset: document.getElementById('settings-reset'),
+        volSlider:    document.getElementById('vol-slider'),
+        volValue:     document.getElementById('vol-value'),
+        settingsControls: document.getElementById('settings-controls'),
+        startSettingsBtn: document.getElementById('start-settings-btn'),
+        goSettingsBtn:    document.getElementById('go-settings-btn'),
+        ctrlGrid:     document.querySelector('.ctrl-grid'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
+    var settingsReturnTo = 'start';
+    var rebindTarget = null; // { action, index } when listening for key
 
     // ============================================================
     // THREE.JS SCENE SETUP
@@ -147,6 +158,7 @@
     // ============================================================
     var keys = {}, pressed = {};
     document.addEventListener('keydown', function (e) {
+        if (rebindTarget && S.mode === 'settings') return; // handled by capture-phase rebind listener
         if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyB'].indexOf(e.code) !== -1) {
             e.preventDefault();
         }
@@ -155,21 +167,27 @@
     });
     document.addEventListener('keyup', function (e) { keys[e.code] = false; });
 
+    function anyPressed(binds) {
+        for (var i = 0; i < binds.length; i++) if (pressed[binds[i]]) return true;
+        return false;
+    }
+
     function processInput() {
-        if (pressed['ArrowLeft'] || pressed['KeyA']) {
+        var B = FR.Settings.bindings;
+        if (anyPressed(B.moveLeft)) {
             if (S.pLane < 2) S.pLane++;
         }
-        if (pressed['ArrowRight'] || pressed['KeyD']) {
+        if (anyPressed(B.moveRight)) {
             if (S.pLane > 0) S.pLane--;
         }
-        if (pressed['ArrowUp'] || pressed['KeyW'] || pressed['Space']) {
+        if (anyPressed(B.jump)) {
             if (!S.jumping && !S.sliding) {
                 S.jumping = true;
                 S.vY = C.JUMP_FORCE;
                 A.play('jump');
             }
         }
-        if (pressed['ArrowDown'] || pressed['KeyS']) {
+        if (anyPressed(B.slide)) {
             if (!S.jumping && !S.sliding) {
                 S.sliding = true;
                 S.slideTmr = C.SLIDE_DUR;
@@ -553,6 +571,144 @@
     ui.goShopBtn.addEventListener('click', function () { openShop('gameover'); });
     ui.goHomeBtn.addEventListener('click', function () { goHome(); });
 
+    // ============================================================
+    // SETTINGS SYSTEM
+    // ============================================================
+    function formatKey(code) {
+        var map = {
+            'ArrowLeft': '\u2190', 'ArrowRight': '\u2192',
+            'ArrowUp': '\u2191', 'ArrowDown': '\u2193',
+            'Space': 'Space', 'Escape': 'Esc',
+        };
+        if (map[code]) return map[code];
+        if (code.startsWith('Key')) return code.slice(3);
+        if (code.startsWith('Digit')) return code.slice(5);
+        return code;
+    }
+
+    var actionNames = {
+        moveLeft: 'Move Left',
+        moveRight: 'Move Right',
+        jump: 'Jump',
+        slide: 'Slide'
+    };
+
+    function openSettings(returnTo) {
+        settingsReturnTo = returnTo || 'start';
+        S.mode = 'settings';
+        rebindTarget = null;
+        ui.startScr.classList.add('hidden');
+        ui.overScr.classList.add('hidden');
+        ui.settingsScr.classList.remove('hidden');
+        renderSettings();
+    }
+
+    function closeSettings() {
+        ui.settingsScr.classList.add('hidden');
+        rebindTarget = null;
+        S.mode = settingsReturnTo;
+        if (settingsReturnTo === 'start') {
+            ui.startScr.classList.remove('hidden');
+            updateCtrlGrid();
+            renderStartPowerups();
+        } else if (settingsReturnTo === 'gameover') {
+            ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    function renderSettings() {
+        // Volume slider
+        ui.volSlider.value = Math.round(FR.Settings.volume * 100);
+        ui.volValue.textContent = Math.round(FR.Settings.volume * 100) + '%';
+
+        // Controls grid
+        var B = FR.Settings.bindings;
+        var html = '';
+        for (var action in actionNames) {
+            html += '<div class="settings-control-row">';
+            html += '<span class="settings-action">' + actionNames[action] + '</span>';
+            html += '<span class="settings-keys">';
+            var keys = B[action];
+            for (var i = 0; i < keys.length; i++) {
+                var isListening = rebindTarget && rebindTarget.action === action && rebindTarget.index === i;
+                html += '<button class="settings-key' + (isListening ? ' listening' : '') +
+                         '" data-action="' + action + '" data-index="' + i + '">' +
+                         (isListening ? '...' : formatKey(keys[i])) + '</button>';
+            }
+            html += '</span>';
+            html += '</div>';
+        }
+        ui.settingsControls.innerHTML = html;
+    }
+
+    function updateCtrlGrid() {
+        if (!ui.ctrlGrid) return;
+        var B = FR.Settings.bindings;
+        var leftKeys = B.moveLeft.map(formatKey).join(' / ');
+        var rightKeys = B.moveRight.map(formatKey).join(' / ');
+        var jumpKeys = B.jump.map(formatKey).join(' / ');
+        var slideKeys = B.slide.map(formatKey).join(' / ');
+        ui.ctrlGrid.innerHTML =
+            '<span class="ctrl-key">' + leftKeys + ' / ' + rightKeys + '</span><span class="ctrl-desc">Switch Lanes</span>' +
+            '<span class="ctrl-key">' + jumpKeys + '</span><span class="ctrl-desc">Jump</span>' +
+            '<span class="ctrl-key">' + slideKeys + '</span><span class="ctrl-desc">Slide</span>';
+    }
+
+    // Volume slider
+    ui.volSlider.addEventListener('input', function () {
+        var v = parseInt(ui.volSlider.value, 10) / 100;
+        FR.Settings.volume = v;
+        ui.volValue.textContent = Math.round(v * 100) + '%';
+        A.setVolume(v);
+        FR.Settings.save();
+    });
+
+    // Controls rebind (event delegation)
+    ui.settingsControls.addEventListener('click', function (e) {
+        var btn = e.target.closest('.settings-key');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var index = parseInt(btn.getAttribute('data-index'), 10);
+        rebindTarget = { action: action, index: index };
+        renderSettings();
+    });
+
+    // Rebind keydown handler
+    document.addEventListener('keydown', function (e) {
+        if (!rebindTarget) return;
+        if (S.mode !== 'settings') return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.code === 'Escape') {
+            rebindTarget = null;
+            renderSettings();
+            return;
+        }
+        FR.Settings.bindings[rebindTarget.action][rebindTarget.index] = e.code;
+        rebindTarget = null;
+        FR.Settings.save();
+        renderSettings();
+    }, true); // capture phase so it fires before game keydown
+
+    // Reset defaults
+    ui.settingsReset.addEventListener('click', function () {
+        FR.Settings.volume = 1.0;
+        FR.Settings.bindings = {
+            moveLeft:  ['ArrowLeft', 'KeyA'],
+            moveRight: ['ArrowRight', 'KeyD'],
+            jump:      ['ArrowUp', 'KeyW', 'Space'],
+            slide:     ['ArrowDown', 'KeyS'],
+        };
+        A.setVolume(1.0);
+        FR.Settings.save();
+        renderSettings();
+    });
+
+    // Settings buttons
+    ui.startSettingsBtn.addEventListener('click', function () { openSettings('start'); });
+    ui.goSettingsBtn.addEventListener('click', function () { openSettings('gameover'); });
+    ui.settingsBack.addEventListener('click', function () { closeSettings(); });
+
     function goHome() {
         // Clear world objects
         var i;
@@ -631,6 +787,7 @@
     // ============================================================
     function startGame() {
         A.init();
+        A.setVolume(FR.Settings.volume);
         activatePowerups();
         S.mode = 'playing';
         ui.startScr.classList.add('hidden');
@@ -854,6 +1011,21 @@
             E.updateClouds(dt, 0, S.gTime, nightAmount);
             E.updateStars(dt, 0, S.gTime, nightAmount);
 
+        } else if (S.mode === 'settings') {
+            if (!rebindTarget && pressed['Escape']) {
+                closeSettings();
+            }
+            for (var kset in pressed) pressed[kset] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
         } else if (S.mode === 'start') {
             // Title screen: gentle camera sway
             if (pressed['KeyB']) {
@@ -962,6 +1134,9 @@
 
         // Show selected powerups on start screen
         renderStartPowerups();
+
+        // Apply saved settings (volume + update control hints)
+        updateCtrlGrid();
 
         // Update best score display
         ui.hudBest.textContent = 'Best: ' + S.highScore;
