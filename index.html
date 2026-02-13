@@ -597,6 +597,190 @@
             background: rgba(255,255,255,0.15);
         }
 
+        /* ---- Username Picker Modal ---- */
+        #username-screen {
+            background: radial-gradient(ellipse at 50% 45%, rgba(10,50,20,0.94), rgba(4,18,8,0.98));
+        }
+        #username-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 48px;
+            color: #5cb85c;
+            text-shadow: 0 0 30px rgba(80,180,80,0.3);
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+        .username-subtitle {
+            font-size: 15px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 28px;
+            max-width: 340px;
+            line-height: 1.5;
+        }
+        .username-input {
+            width: 260px;
+            padding: 12px 18px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+            pointer-events: auto;
+        }
+        .username-input:focus {
+            border-color: #5cb85c;
+        }
+        .username-input::placeholder {
+            color: rgba(255,255,255,0.25);
+            font-weight: 400;
+        }
+        .username-error {
+            font-size: 13px;
+            color: #e74c3c;
+            margin-top: 8px;
+            min-height: 18px;
+        }
+        .username-rules {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 6px;
+        }
+        .username-confirm-btn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            border: 2px solid #5cb85c;
+            border-radius: 8px;
+            background: rgba(92,184,92,0.15);
+            color: #5cb85c;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .username-confirm-btn:hover {
+            background: rgba(92,184,92,0.3);
+        }
+        .username-confirm-btn:disabled {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.25);
+            cursor: default;
+        }
+
+        /* ---- Leaderboard Screen ---- */
+        #leaderboard-screen {
+            background: radial-gradient(ellipse at 50% 40%, rgba(10,30,60,0.94), rgba(4,12,28,0.98));
+            overflow-y: auto;
+            padding: 30px 20px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        #leaderboard-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 48px;
+            color: #4aa8ff;
+            text-shadow: 0 0 30px rgba(74,168,255,0.3);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+        }
+        .lb-table {
+            width: 100%;
+            max-width: 480px;
+            border-collapse: collapse;
+        }
+        .lb-header {
+            display: flex;
+            padding: 8px 12px;
+            border-bottom: 2px solid rgba(255,255,255,0.15);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+        }
+        .lb-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            transition: background 0.15s;
+        }
+        .lb-row:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .lb-row.lb-me {
+            background: rgba(74,168,255,0.1);
+            border-color: rgba(74,168,255,0.2);
+        }
+        .lb-rank {
+            width: 40px;
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .lb-row:nth-child(2) .lb-rank { color: #ffd700; }
+        .lb-row:nth-child(3) .lb-rank { color: #c0c0c0; }
+        .lb-row:nth-child(4) .lb-rank { color: #cd7f32; }
+        .lb-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            margin-right: 10px;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+        .lb-avatar-placeholder {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.15);
+            margin-right: 10px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: rgba(255,255,255,0.3);
+        }
+        .lb-name {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .lb-score {
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: #ffd700;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+        .lb-empty {
+            font-size: 15px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 40px;
+        }
+        .lb-signin-hint {
+            font-size: 14px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
         /* Flash overlay */
         #flash {
             position: absolute; inset: 0;
@@ -654,6 +838,7 @@
             <div class="prompt">Press SPACE to Run</div>
             <div class="screen-btns">
                 <button class="screen-btn" id="start-shop-btn">Shop</button>
+                <button class="screen-btn" id="start-lb-btn">Leaderboard</button>
                 <button class="screen-btn" id="start-settings-btn">Settings</button>
             </div>
             <div class="active-powerups" id="start-powerups"></div>
@@ -683,6 +868,7 @@
             <div class="prompt go-prompt">Press SPACE to Try Again</div>
             <div class="screen-btns">
                 <button class="screen-btn" id="go-shop-btn">Shop</button>
+                <button class="screen-btn" id="go-lb-btn">Leaderboard</button>
                 <button class="screen-btn" id="go-settings-btn">Settings</button>
                 <button class="screen-btn" id="go-home-btn">Home</button>
             </div>
@@ -737,6 +923,32 @@
             </div>
 
             <button class="shop-back-btn" id="settings-back">Back</button>
+        </div>
+
+        <!-- Username Picker -->
+        <div id="username-screen" class="screen hidden">
+            <h1>PICK A NAME</h1>
+            <div class="username-subtitle">Choose a username for the leaderboard. This is how other players will see you.</div>
+            <input type="text" class="username-input" id="username-input" placeholder="Username" maxlength="16" autocomplete="off" spellcheck="false">
+            <div class="username-error" id="username-error"></div>
+            <div class="username-rules">2-16 characters, letters, numbers & underscores</div>
+            <button class="username-confirm-btn" id="username-confirm" disabled>Confirm</button>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="leaderboard-screen" class="screen hidden">
+            <h1>LEADERBOARD</h1>
+            <div class="lb-table" id="lb-table">
+                <div class="lb-header">
+                    <span class="lb-rank">#</span>
+                    <span style="width:38px;flex-shrink:0;"></span>
+                    <span class="lb-name">Player</span>
+                    <span class="lb-score" style="color:rgba(255,255,255,0.4);">Score</span>
+                </div>
+            </div>
+            <div class="lb-empty" id="lb-empty" style="display:none;">No scores yet. Be the first!</div>
+            <div class="lb-signin-hint" id="lb-signin-hint" style="display:none;">Sign in to submit your score</div>
+            <button class="shop-back-btn" id="lb-back">Back</button>
         </div>
     </div>
 

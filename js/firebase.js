@@ -24,6 +24,7 @@
     var currentUser = null;
     var available = false;
     var syncing = false;
+    var username = null; // cached username for current user
 
     // ============================================================
     // INIT
@@ -62,6 +63,7 @@
 
     function signOut() {
         if (!available || !auth) return;
+        username = null;
         auth.signOut().catch(function () {});
     }
 
@@ -85,12 +87,18 @@
         db.collection('users').doc(currentUser.uid).get()
             .then(function (doc) {
                 if (doc.exists) {
-                    mergeCloudData(doc.data());
+                    var data = doc.data();
+                    username = data.username || null;
+                    mergeCloudData(data);
                 } else {
                     // First sign-in: push local data to cloud
                     sync();
                 }
                 updateAuthUI();
+                // If no username set, prompt user to pick one
+                if (!username && FR.Fire.onNeedUsername) {
+                    FR.Fire.onNeedUsername();
+                }
             })
             .catch(function () {
                 // Network error — continue with localStorage
@@ -216,11 +224,22 @@
             photoURL: currentUser.photoURL || '',
             lastSaved: firebase.firestore.FieldValue.serverTimestamp()
         };
+        if (username) data.username = username;
 
         db.collection('users').doc(currentUser.uid).set(data, { merge: true })
             .then(function () {
                 syncing = false;
                 updateSyncIndicator(true);
+                // Update leaderboard entry if user has a username and a score
+                if (username && S.highScore > 0) {
+                    db.collection('leaderboard').doc(currentUser.uid).set({
+                        uid: currentUser.uid,
+                        username: username,
+                        photoURL: currentUser.photoURL || '',
+                        highScore: S.highScore,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true }).catch(function () {});
+                }
             })
             .catch(function () {
                 syncing = false;
@@ -254,6 +273,7 @@
 
         // Fill in user data
         if (signedIn && user) {
+            var displayStr = username || user.displayName || 'Player';
             var avatars = document.querySelectorAll('.auth-avatar');
             var names = document.querySelectorAll('.auth-name');
             for (var i = 0; i < avatars.length; i++) {
@@ -261,7 +281,7 @@
                 avatars[i].style.display = user.photoURL ? 'block' : 'none';
             }
             for (var j = 0; j < names.length; j++) {
-                names[j].textContent = user.displayName || 'Player';
+                names[j].textContent = displayStr;
             }
         }
     }
@@ -280,6 +300,65 @@
     }
 
     // ============================================================
+    // USERNAME
+    // ============================================================
+    function setUsername(name, callback) {
+        if (!available || !db || !currentUser) { if (callback) callback(false); return; }
+        username = name;
+        var batch = db.batch();
+        var userRef = db.collection('users').doc(currentUser.uid);
+        batch.set(userRef, { username: name }, { merge: true });
+        // Also create/update leaderboard entry
+        var lbRef = db.collection('leaderboard').doc(currentUser.uid);
+        batch.set(lbRef, {
+            uid: currentUser.uid,
+            username: name,
+            photoURL: currentUser.photoURL || '',
+            highScore: FR.S.highScore,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        batch.commit()
+            .then(function () {
+                updateAuthUI();
+                if (callback) callback(true);
+            })
+            .catch(function () {
+                if (callback) callback(false);
+            });
+    }
+
+    function getUsername() {
+        return username;
+    }
+
+    // ============================================================
+    // LEADERBOARD
+    // ============================================================
+    function fetchLeaderboard(callback) {
+        if (!available || !db) { callback([]); return; }
+        db.collection('leaderboard')
+            .orderBy('highScore', 'desc')
+            .limit(20)
+            .get()
+            .then(function (snap) {
+                var results = [];
+                snap.forEach(function (doc) {
+                    var d = doc.data();
+                    results.push({
+                        uid: d.uid || doc.id,
+                        username: d.username || 'Player',
+                        photoURL: d.photoURL || '',
+                        highScore: d.highScore || 0
+                    });
+                });
+                callback(results);
+            })
+            .catch(function () {
+                callback([]);
+            });
+    }
+
+    // ============================================================
     // PUBLIC API
     // ============================================================
     FR.Fire = {
@@ -290,6 +369,10 @@
         isSignedIn: isSignedIn,
         isAvailable: isAvailable,
         getUser: getUser,
-        updateAuthUI: updateAuthUI
+        getUsername: getUsername,
+        setUsername: setUsername,
+        fetchLeaderboard: fetchLeaderboard,
+        updateAuthUI: updateAuthUI,
+        onNeedUsername: null  // set by game.js to open username modal
     };
 })();

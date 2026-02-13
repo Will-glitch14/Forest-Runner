@@ -42,9 +42,24 @@
         startSettingsBtn: document.getElementById('start-settings-btn'),
         goSettingsBtn:    document.getElementById('go-settings-btn'),
         ctrlGrid:     document.querySelector('.ctrl-grid'),
+        // Username modal
+        usernameScr:     document.getElementById('username-screen'),
+        usernameInput:   document.getElementById('username-input'),
+        usernameError:   document.getElementById('username-error'),
+        usernameConfirm: document.getElementById('username-confirm'),
+        // Leaderboard
+        lbScr:      document.getElementById('leaderboard-screen'),
+        lbTable:    document.getElementById('lb-table'),
+        lbEmpty:    document.getElementById('lb-empty'),
+        lbHint:     document.getElementById('lb-signin-hint'),
+        lbBack:     document.getElementById('lb-back'),
+        startLbBtn: document.getElementById('start-lb-btn'),
+        goLbBtn:    document.getElementById('go-lb-btn'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
     var settingsReturnTo = 'start';
+    var lbReturnTo = 'start';
+    var usernameReturnMode = 'start'; // mode to restore after username picker
     var rebindTarget = null; // { action, index } when listening for key
 
     // ============================================================
@@ -159,6 +174,7 @@
     var keys = {}, pressed = {};
     document.addEventListener('keydown', function (e) {
         if (rebindTarget && S.mode === 'settings') return; // handled by capture-phase rebind listener
+        if (S.mode === 'username') return; // let username input handle keys
         if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyB'].indexOf(e.code) !== -1) {
             e.preventDefault();
         }
@@ -718,6 +734,178 @@
     if (settingsSignInBtn) settingsSignInBtn.addEventListener('click', function () { if (FR.Fire) FR.Fire.signIn(); });
     if (settingsSignOutBtn) settingsSignOutBtn.addEventListener('click', function () { if (FR.Fire) FR.Fire.signOut(); });
 
+    // ============================================================
+    // USERNAME MODAL
+    // ============================================================
+    var usernameRegex = /^[a-zA-Z0-9_]{2,16}$/;
+
+    function openUsernameModal() {
+        usernameReturnMode = S.mode;
+        S.mode = 'username';
+        ui.startScr.classList.add('hidden');
+        ui.overScr.classList.add('hidden');
+        ui.usernameScr.classList.remove('hidden');
+        ui.usernameInput.value = '';
+        ui.usernameError.textContent = '';
+        ui.usernameConfirm.disabled = true;
+        setTimeout(function () { ui.usernameInput.focus(); }, 100);
+    }
+
+    function closeUsernameModal() {
+        ui.usernameScr.classList.add('hidden');
+        S.mode = usernameReturnMode;
+        if (usernameReturnMode === 'start') {
+            ui.startScr.classList.remove('hidden');
+        } else if (usernameReturnMode === 'gameover') {
+            ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    ui.usernameInput.addEventListener('input', function () {
+        var val = ui.usernameInput.value;
+        if (val.length === 0) {
+            ui.usernameError.textContent = '';
+            ui.usernameConfirm.disabled = true;
+        } else if (val.length < 2) {
+            ui.usernameError.textContent = 'Too short';
+            ui.usernameConfirm.disabled = true;
+        } else if (!usernameRegex.test(val)) {
+            ui.usernameError.textContent = 'Letters, numbers & underscores only';
+            ui.usernameConfirm.disabled = true;
+        } else {
+            ui.usernameError.textContent = '';
+            ui.usernameConfirm.disabled = false;
+        }
+    });
+
+    ui.usernameConfirm.addEventListener('click', function () {
+        var val = ui.usernameInput.value.trim();
+        if (!usernameRegex.test(val)) return;
+        ui.usernameConfirm.disabled = true;
+        ui.usernameError.textContent = '';
+        if (FR.Fire) {
+            FR.Fire.setUsername(val, function (ok) {
+                if (ok) {
+                    closeUsernameModal();
+                } else {
+                    ui.usernameError.textContent = 'Failed to save. Try again.';
+                    ui.usernameConfirm.disabled = false;
+                }
+            });
+        }
+    });
+
+    // Allow Enter key to confirm username
+    ui.usernameInput.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' && !ui.usernameConfirm.disabled) {
+            ui.usernameConfirm.click();
+        }
+    });
+
+    // Hook: firebase calls this when user has no username
+    if (FR.Fire) {
+        FR.Fire.onNeedUsername = function () {
+            // Only show if on start or gameover screen (not mid-game)
+            if (S.mode === 'start' || S.mode === 'gameover') {
+                openUsernameModal();
+            }
+        };
+    }
+
+    // ============================================================
+    // LEADERBOARD
+    // ============================================================
+    function openLeaderboard(returnTo) {
+        lbReturnTo = returnTo || 'start';
+        S.mode = 'leaderboard';
+        ui.startScr.classList.add('hidden');
+        ui.overScr.classList.add('hidden');
+        ui.lbScr.classList.remove('hidden');
+        renderLeaderboard([]);
+        ui.lbEmpty.style.display = 'none';
+        ui.lbHint.style.display = 'none';
+
+        if (FR.Fire && FR.Fire.isAvailable()) {
+            FR.Fire.fetchLeaderboard(function (data) {
+                renderLeaderboard(data);
+            });
+            if (!FR.Fire.isSignedIn()) {
+                ui.lbHint.style.display = 'block';
+            }
+        } else {
+            ui.lbEmpty.textContent = 'Sign in to see the leaderboard';
+            ui.lbEmpty.style.display = 'block';
+        }
+    }
+
+    function closeLeaderboard() {
+        ui.lbScr.classList.add('hidden');
+        S.mode = lbReturnTo;
+        if (lbReturnTo === 'start') {
+            ui.startScr.classList.remove('hidden');
+        } else if (lbReturnTo === 'gameover') {
+            ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    function renderLeaderboard(data) {
+        // Keep the header row, clear the rest
+        var header = ui.lbTable.querySelector('.lb-header');
+        ui.lbTable.innerHTML = '';
+        ui.lbTable.appendChild(header);
+
+        if (data.length === 0) {
+            ui.lbEmpty.style.display = 'block';
+            return;
+        }
+        ui.lbEmpty.style.display = 'none';
+
+        var currentUid = (FR.Fire && FR.Fire.isSignedIn() && FR.Fire.getUser()) ? FR.Fire.getUser().uid : null;
+
+        for (var i = 0; i < data.length; i++) {
+            var entry = data[i];
+            var isMe = currentUid && entry.uid === currentUid;
+
+            var row = document.createElement('div');
+            row.className = 'lb-row' + (isMe ? ' lb-me' : '');
+
+            var rank = document.createElement('span');
+            rank.className = 'lb-rank';
+            rank.textContent = (i + 1);
+            row.appendChild(rank);
+
+            if (entry.photoURL) {
+                var avatar = document.createElement('img');
+                avatar.className = 'lb-avatar';
+                avatar.src = entry.photoURL;
+                avatar.alt = '';
+                row.appendChild(avatar);
+            } else {
+                var ph = document.createElement('div');
+                ph.className = 'lb-avatar-placeholder';
+                ph.textContent = entry.username.charAt(0).toUpperCase();
+                row.appendChild(ph);
+            }
+
+            var name = document.createElement('span');
+            name.className = 'lb-name';
+            name.textContent = entry.username;
+            row.appendChild(name);
+
+            var score = document.createElement('span');
+            score.className = 'lb-score';
+            score.textContent = Math.floor(entry.highScore);
+            row.appendChild(score);
+
+            ui.lbTable.appendChild(row);
+        }
+    }
+
+    // Leaderboard buttons
+    ui.startLbBtn.addEventListener('click', function () { openLeaderboard('start'); });
+    ui.goLbBtn.addEventListener('click', function () { openLeaderboard('gameover'); });
+    ui.lbBack.addEventListener('click', function () { closeLeaderboard(); });
+
     function goHome() {
         // Clear world objects
         var i;
@@ -1028,6 +1216,33 @@
                 closeSettings();
             }
             for (var kset in pressed) pressed[kset] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'leaderboard') {
+            if (pressed['Escape']) {
+                closeLeaderboard();
+            }
+            for (var klb in pressed) pressed[klb] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'username') {
+            for (var kun in pressed) pressed[kun] = false;
             FR.camera.position.set(
                 Math.sin(t * 0.3) * 2.5,
                 5.5 + Math.sin(t * 0.5) * 0.6,

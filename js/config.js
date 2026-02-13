@@ -31,7 +31,7 @@ FR.C = {
 
 // ---- Mutable Game State ----
 FR.S = {
-    mode:       'loading',   // loading, start, playing, dying, gameover
+    mode:       'loading',   // loading, start, playing, dying, gameover, shop, settings, leaderboard, username
     score:      0,
     coins:      0,
     speed:      13,
