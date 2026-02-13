@@ -601,6 +601,7 @@
         ui.overScr.classList.add('hidden');
         ui.settingsScr.classList.remove('hidden');
         renderSettings();
+        if (FR.Fire) FR.Fire.updateAuthUI();
     }
 
     function closeSettings() {
@@ -708,6 +709,14 @@
     ui.startSettingsBtn.addEventListener('click', function () { openSettings('start'); });
     ui.goSettingsBtn.addEventListener('click', function () { openSettings('gameover'); });
     ui.settingsBack.addEventListener('click', function () { closeSettings(); });
+
+    // Auth buttons
+    var startSignInBtn = document.getElementById('start-signin-btn');
+    var settingsSignInBtn = document.getElementById('settings-signin-btn');
+    var settingsSignOutBtn = document.getElementById('settings-signout-btn');
+    if (startSignInBtn) startSignInBtn.addEventListener('click', function () { if (FR.Fire) FR.Fire.signIn(); });
+    if (settingsSignInBtn) settingsSignInBtn.addEventListener('click', function () { if (FR.Fire) FR.Fire.signIn(); });
+    if (settingsSignOutBtn) settingsSignOutBtn.addEventListener('click', function () { if (FR.Fire) FR.Fire.signOut(); });
 
     function goHome() {
         // Clear world objects
@@ -820,6 +829,9 @@
             S.highCoins = S.coins;
             try { localStorage.setItem('fr_hc', String(S.highCoins)); } catch (e) {}
         }
+
+        // Sync to cloud
+        if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
 
         ui.goScore.textContent = Math.floor(S.score);
         ui.goCoins.textContent = S.coins;
@@ -1095,6 +1107,9 @@
         // Progress indicator
         var fill = ui.loadFill;
         fill.style.width = '20%';
+
+        // Initialize Firebase (no-op if not configured)
+        if (FR.Fire) FR.Fire.init();
 
         setupScene();
         fill.style.width = '35%';

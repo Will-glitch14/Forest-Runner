@@ -127,6 +127,7 @@ FR.Shop.save = function () {
         }
         localStorage.setItem('fr_shop', JSON.stringify(data));
     } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
 };
 
 // ---- Settings (volume + key bindings) ----
@@ -163,6 +164,7 @@ FR.Settings.save = function () {
             bindings: FR.Settings.bindings
         }));
     } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
 };
 
 // ---- Shared object containers ----
