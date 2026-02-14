@@ -597,6 +597,76 @@
             background: rgba(255,255,255,0.15);
         }
 
+        /* ---- Settings Username Change ---- */
+        .settings-username-row {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .settings-username-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .settings-username-field {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .settings-username-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+            pointer-events: auto;
+        }
+        .settings-username-input:focus {
+            border-color: #5cb85c;
+        }
+        .settings-username-input::placeholder {
+            color: rgba(255,255,255,0.2);
+            font-weight: 400;
+        }
+        .settings-username-save {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            background: #5cb85c;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background 0.15s, opacity 0.15s;
+        }
+        .settings-username-save:hover {
+            background: #6ec86e;
+        }
+        .settings-username-save:disabled {
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.3);
+            cursor: default;
+        }
+        .settings-username-msg {
+            font-size: 12px;
+            margin-top: 6px;
+            min-height: 16px;
+        }
+        .settings-username-msg.error { color: #e74c3c; }
+        .settings-username-msg.success { color: #5cb85c; }
+
         /* ---- Username Picker Modal ---- */
         #username-screen {
             background: radial-gradient(ellipse at 50% 45%, rgba(10,50,20,0.94), rgba(4,18,8,0.98));
@@ -919,6 +989,14 @@
                         <span class="auth-name"></span>
                     </div>
                     <button class="auth-signout-btn" id="settings-signout-btn" style="display:none;">Sign Out</button>
+                </div>
+                <div class="settings-username-row" id="settings-username-row" style="display:none;">
+                    <div class="settings-username-label">Username</div>
+                    <div class="settings-username-field">
+                        <input type="text" class="settings-username-input" id="settings-username-input" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Enter username">
+                        <button class="settings-username-save" id="settings-username-save" disabled>Save</button>
+                    </div>
+                    <div class="settings-username-msg" id="settings-username-msg"></div>
                 </div>
             </div>
 

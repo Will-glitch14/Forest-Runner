@@ -41,6 +41,10 @@
         settingsControls: document.getElementById('settings-controls'),
         startSettingsBtn: document.getElementById('start-settings-btn'),
         goSettingsBtn:    document.getElementById('go-settings-btn'),
+        settingsUsernameRow:   document.getElementById('settings-username-row'),
+        settingsUsernameInput: document.getElementById('settings-username-input'),
+        settingsUsernameSave:  document.getElementById('settings-username-save'),
+        settingsUsernameMsg:   document.getElementById('settings-username-msg'),
         ctrlGrid:     document.querySelector('.ctrl-grid'),
         // Username modal
         usernameScr:     document.getElementById('username-screen'),
@@ -175,6 +179,7 @@
     document.addEventListener('keydown', function (e) {
         if (rebindTarget && S.mode === 'settings') return; // handled by capture-phase rebind listener
         if (S.mode === 'username') return; // let username input handle keys
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') return; // let text inputs handle keys
         if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyB'].indexOf(e.code) !== -1) {
             e.preventDefault();
         }
@@ -656,6 +661,17 @@
             html += '</div>';
         }
         ui.settingsControls.innerHTML = html;
+
+        // Username field (only visible when signed in)
+        var signedIn = FR.Fire && FR.Fire.isSignedIn();
+        ui.settingsUsernameRow.style.display = signedIn ? 'block' : 'none';
+        if (signedIn) {
+            var currentName = FR.Fire.getUsername() || '';
+            ui.settingsUsernameInput.value = currentName;
+            ui.settingsUsernameSave.disabled = true;
+            ui.settingsUsernameMsg.textContent = '';
+            ui.settingsUsernameMsg.className = 'settings-username-msg';
+        }
     }
 
     function updateCtrlGrid() {
@@ -678,6 +694,53 @@
         ui.volValue.textContent = Math.round(v * 100) + '%';
         A.setVolume(v);
         FR.Settings.save();
+    });
+
+    // Settings username change
+    ui.settingsUsernameInput.addEventListener('input', function () {
+        var val = ui.settingsUsernameInput.value;
+        var currentName = (FR.Fire && FR.Fire.getUsername()) || '';
+        ui.settingsUsernameMsg.textContent = '';
+        ui.settingsUsernameMsg.className = 'settings-username-msg';
+        if (val === currentName || val.length === 0) {
+            ui.settingsUsernameSave.disabled = true;
+        } else if (val.length < 2) {
+            ui.settingsUsernameMsg.textContent = 'Too short';
+            ui.settingsUsernameMsg.className = 'settings-username-msg error';
+            ui.settingsUsernameSave.disabled = true;
+        } else if (!/^[a-zA-Z0-9_]{2,16}$/.test(val)) {
+            ui.settingsUsernameMsg.textContent = 'Letters, numbers & underscores only';
+            ui.settingsUsernameMsg.className = 'settings-username-msg error';
+            ui.settingsUsernameSave.disabled = true;
+        } else {
+            ui.settingsUsernameSave.disabled = false;
+        }
+    });
+
+    ui.settingsUsernameSave.addEventListener('click', function () {
+        var val = ui.settingsUsernameInput.value.trim();
+        if (!/^[a-zA-Z0-9_]{2,16}$/.test(val)) return;
+        ui.settingsUsernameSave.disabled = true;
+        ui.settingsUsernameMsg.textContent = '';
+        if (FR.Fire) {
+            FR.Fire.setUsername(val, function (ok) {
+                if (ok) {
+                    ui.settingsUsernameMsg.textContent = 'Saved!';
+                    ui.settingsUsernameMsg.className = 'settings-username-msg success';
+                } else {
+                    ui.settingsUsernameMsg.textContent = 'Failed to save. Try again.';
+                    ui.settingsUsernameMsg.className = 'settings-username-msg error';
+                    ui.settingsUsernameSave.disabled = false;
+                }
+            });
+        }
+    });
+
+    ui.settingsUsernameInput.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' && !ui.settingsUsernameSave.disabled) {
+            ui.settingsUsernameSave.click();
+        }
+        e.stopPropagation(); // prevent game input capture
     });
 
     // Controls rebind (event delegation)
