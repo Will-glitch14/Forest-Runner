@@ -45,6 +45,9 @@
                     loadCloudData();
                 }
             });
+
+            // Handle redirect result (from signInWithRedirect)
+            auth.getRedirectResult().catch(function () {});
         } catch (e) {
             available = false;
         }
@@ -56,9 +59,7 @@
     function signIn() {
         if (!available || !auth) return;
         var provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(function (e) {
-            // Silent fail — user cancelled or popup blocked
-        });
+        auth.signInWithRedirect(provider);
     }
 
     function signOut() {
