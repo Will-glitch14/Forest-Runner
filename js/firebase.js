@@ -59,7 +59,14 @@
     function signIn() {
         if (!available || !auth) return;
         var provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider);
+        auth.signInWithPopup(provider).catch(function (e) {
+            console.warn('Popup sign-in failed:', e.code, e.message);
+            // Fallback to redirect if popup was blocked or failed
+            if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' ||
+                e.code === 'auth/cancelled-popup-request') {
+                auth.signInWithRedirect(provider);
+            }
+        });
     }
 
     function signOut() {
