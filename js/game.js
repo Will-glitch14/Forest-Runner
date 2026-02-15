@@ -1045,6 +1045,7 @@
         S.score = 0; S.coins = 0; S.speed = C.INIT_SPEED;
         S.pZ = 0; S.pX = 0; S.pY = 0; S.pLane = 1;
         S.vY = 0; S.jumping = false; S.sliding = false; S.slideTmr = 0;
+        S.slideBlend = 0;
         S.runPh = 0; S.gTime = 0; S.lastObsZ = 22; S.lastCoinZ = 12;
         S.shakeAmt = 0; S.flashAlpha = 0; S.deathTimer = 0;
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
@@ -1177,6 +1178,7 @@
         S.score = 0; S.coins = 0; S.speed = C.INIT_SPEED;
         S.pZ = 0; S.pX = 0; S.pY = 0; S.pLane = 1;
         S.vY = 0; S.jumping = false; S.sliding = false; S.slideTmr = 0;
+        S.slideBlend = 0;
         S.runPh = 0; S.gTime = 0; S.lastObsZ = 22; S.lastCoinZ = 12;
         S.shakeAmt = 0; S.flashAlpha = 0; S.deathTimer = 0;
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
@@ -1239,7 +1241,7 @@
         }
 
         // Player position
-        FR.player.group.position.set(S.pX, S.pY, S.pZ);
+        FR.player.group.position.set(S.pX, S.pY - S.slideBlend * 0.9, S.pZ);
         W.animatePlayer(dt);
 
         // Camera

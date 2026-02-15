@@ -255,22 +255,31 @@ FR.World = (function () {
         P.scarfTail.rotation.x = Math.sin(S.gTime * 6) * 0.15;
         P.scarfTail.rotation.z = Math.sin(S.gTime * 4) * 0.1;
 
-        if (S.sliding) {
-            P.group.scale.set(1, 0.42, 1);
-            P.torso.rotation.x = 0.35;
-            P.lArm.rotation.x = -0.3; P.rArm.rotation.x = -0.3;
-            P.lLeg.rotation.x = 0.4;  P.rLeg.rotation.x = 0.4;
-        } else if (S.jumping) {
-            P.group.scale.set(1, 1, 1);
+        // Compute base pose (jumping or running)
+        if (S.jumping) {
             P.torso.rotation.x = -0.12;
             P.lArm.rotation.x = -0.7; P.rArm.rotation.x = -0.7;
             P.lLeg.rotation.x = 0.4;  P.rLeg.rotation.x = -0.25;
         } else {
-            P.group.scale.set(1, 1, 1);
             P.torso.rotation.x = 0.06 + Math.abs(sw) * 0.03;
             P.lArm.rotation.x = sw * 0.9;  P.rArm.rotation.x = -sw * 0.9;
             P.lLeg.rotation.x = -sw * 0.85; P.rLeg.rotation.x = sw * 0.85;
         }
+
+        // Blend slide pose on top
+        P.group.rotation.x = 0; // base value (not set by running/jumping poses)
+        var blendTarget = S.sliding ? 1.0 : 0.0;
+        S.slideBlend += (blendTarget - S.slideBlend) * Math.min(1, dt * 10);
+        var b = S.slideBlend;
+        if (b > 0.001) {
+            P.group.rotation.x = P.group.rotation.x * (1 - b) + (-1.2) * b;
+            P.torso.rotation.x = P.torso.rotation.x * (1 - b) + (-0.3) * b;
+            P.lArm.rotation.x  = P.lArm.rotation.x  * (1 - b) + 0.8 * b;
+            P.rArm.rotation.x  = P.rArm.rotation.x  * (1 - b) + 0.8 * b;
+            P.lLeg.rotation.x  = P.lLeg.rotation.x  * (1 - b) + (-1.2) * b;
+            P.rLeg.rotation.x  = P.rLeg.rotation.x  * (1 - b) + 0.6 * b;
+        }
+        P.group.scale.set(1, 1, 1);
     }
 
     // ============================================================
