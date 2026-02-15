@@ -43,6 +43,7 @@ FR.S = {
     jumping:    false,
     sliding:    false,
     slideTmr:   0,
+    slideBlend: 0,
     runPh:      0,
     gTime:      0,
     lastObsZ:   0,
