@@ -1241,7 +1241,7 @@
         }
 
         // Player position
-        FR.player.group.position.set(S.pX, S.pY - S.slideBlend * 0.9, S.pZ);
+        FR.player.group.position.set(S.pX, S.pY - S.slideBlend * 0.45, S.pZ);
         W.animatePlayer(dt);
 
         // Camera
