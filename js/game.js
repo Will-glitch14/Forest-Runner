@@ -206,6 +206,45 @@
         }
     });
 
+    // ---- Mobile touch controls ----
+    var touchStartX = 0, touchStartY = 0;
+    var tapped = false;
+    var SWIPE_THRESHOLD = 30;
+
+    document.addEventListener('touchstart', function (e) {
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+    }, { passive: false });
+
+    document.addEventListener('touchend', function (e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        var absDx = Math.abs(dx);
+        var absDy = Math.abs(dy);
+
+        if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) {
+            // Short tap — no significant swipe
+            tapped = true;
+            return;
+        }
+
+        e.preventDefault();
+
+        if (absDx > absDy) {
+            // Horizontal swipe
+            if (dx < 0) pressed['ArrowLeft'] = true;
+            else pressed['ArrowRight'] = true;
+        } else {
+            // Vertical swipe
+            if (dy < 0) pressed['ArrowUp'] = true;
+            else pressed['ArrowDown'] = true;
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+    }, { passive: false });
+
     function anyPressed(binds) {
         for (var i = 0; i < binds.length; i++) if (pressed[binds[i]]) return true;
         return false;
@@ -1339,7 +1378,8 @@
             if (pressed['KeyB']) {
                 openShop('start');
                 for (var kb1 in pressed) pressed[kb1] = false;
-            } else if (pressed['Space'] || pressed['Enter']) {
+            } else if (pressed['Space'] || pressed['Enter'] || tapped) {
+                tapped = false;
                 startGame();
                 for (var k2 in pressed) pressed[k2] = false;
                 keys['Space'] = false; keys['Enter'] = false;
@@ -1378,7 +1418,8 @@
             if (pressed['KeyB']) {
                 openShop('gameover');
                 for (var kb2 in pressed) pressed[kb2] = false;
-            } else if (pressed['Space'] || pressed['Enter']) {
+            } else if (pressed['Space'] || pressed['Enter'] || tapped) {
+                tapped = false;
                 pressed['Space'] = false; pressed['Enter'] = false;
                 keys['Space'] = false; keys['Enter'] = false;
                 restartGame();
