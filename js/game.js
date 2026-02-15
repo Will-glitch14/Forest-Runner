@@ -188,6 +188,24 @@
     });
     document.addEventListener('keyup', function (e) { keys[e.code] = false; });
 
+    // Cheat code: type "ADD500K" during gameplay to add 500,000 to score
+    var cheatBuffer = '';
+    var cheatCode = 'ADD500K';
+    document.addEventListener('keydown', function (e) {
+        if (S.mode !== 'playing') { cheatBuffer = ''; return; }
+        var ch = e.key.toUpperCase();
+        if (ch.length === 1) {
+            cheatBuffer += ch;
+            if (cheatBuffer.length > cheatCode.length) {
+                cheatBuffer = cheatBuffer.slice(-cheatCode.length);
+            }
+            if (cheatBuffer === cheatCode) {
+                S.score += 500000;
+                cheatBuffer = '';
+            }
+        }
+    });
+
     function anyPressed(binds) {
         for (var i = 0; i < binds.length; i++) if (pressed[binds[i]]) return true;
         return false;
