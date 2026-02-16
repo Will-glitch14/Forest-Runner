@@ -38,6 +38,7 @@
         invBack:        document.getElementById('inv-back'),
         startPU:    document.getElementById('start-powerups'),
         startShopBtn: document.getElementById('start-shop-btn'),
+        startInvBtn:  document.getElementById('start-inv-btn'),
         goShopBtn:  document.getElementById('go-shop-btn'),
         goHomeBtn:  document.getElementById('go-home-btn'),
         settingsScr:  document.getElementById('settings-screen'),
@@ -573,8 +574,12 @@
     // ============================================================
     // INVENTORY
     // ============================================================
-    function openInventory() {
+    var invReturnTo = 'shop';
+
+    function openInventory(returnTo) {
+        invReturnTo = returnTo || 'shop';
         stopShopTimer();
+        ui.startScr.classList.add('hidden');
         ui.shopScr.classList.add('hidden');
         ui.invScr.classList.remove('hidden');
         S.mode = 'inventory';
@@ -583,14 +588,21 @@
 
     function closeInventory() {
         ui.invScr.classList.add('hidden');
-        ui.shopScr.classList.remove('hidden');
-        S.mode = 'shop';
-        renderShop();
-        startShopTimer();
+        if (invReturnTo === 'shop') {
+            ui.shopScr.classList.remove('hidden');
+            S.mode = 'shop';
+            renderShop();
+            startShopTimer();
+        } else {
+            ui.startScr.classList.remove('hidden');
+            S.mode = 'start';
+            renderStartPowerups();
+        }
     }
 
     function renderInventory() {
         var shop = FR.Shop;
+        ui.invBack.textContent = invReturnTo === 'shop' ? 'Back to Shop' : 'Back';
 
         // All outfits (owned shown with equip, unowned shown as locked)
         var outfitHTML = '';
@@ -663,7 +675,8 @@
         }
     });
 
-    ui.shopInvBtn.addEventListener('click', function () { openInventory(); });
+    ui.shopInvBtn.addEventListener('click', function () { openInventory('shop'); });
+    ui.startInvBtn.addEventListener('click', function () { openInventory('start'); });
     ui.invBack.addEventListener('click', function () { closeInventory(); });
 
     // ============================================================
