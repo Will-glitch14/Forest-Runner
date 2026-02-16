@@ -28,6 +28,7 @@
         shopWallet: document.getElementById('shop-wallet'),
         shopPU:     document.getElementById('shop-powerups'),
         shopCos:    document.getElementById('shop-cosmetics'),
+        shopRefreshTimer: document.getElementById('shop-refresh-timer'),
         shopBack:   document.getElementById('shop-back'),
         startPU:    document.getElementById('start-powerups'),
         startShopBtn: document.getElementById('start-shop-btn'),
@@ -549,9 +550,11 @@
         ui.overScr.classList.add('hidden');
         ui.shopScr.classList.remove('hidden');
         renderShop();
+        startShopTimer();
     }
 
     function closeShop() {
+        stopShopTimer();
         ui.shopScr.classList.add('hidden');
         S.mode = shopReturnTo;
         if (shopReturnTo === 'start') {
@@ -559,6 +562,86 @@
             renderStartPowerups();
         } else if (shopReturnTo === 'gameover') {
             ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    // ============================================================
+    // ROTATING SHOP (6-hour refresh)
+    // ============================================================
+    var ROTATION_MS = 6 * 60 * 60 * 1000; // 6 hours
+    var shopTimerInterval = null;
+
+    function seededRandom(seed) {
+        // Simple deterministic PRNG (mulberry32)
+        return function () {
+            seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+            var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    function getRotatingOutfits() {
+        var shop = FR.Shop;
+        var allKeys = [];
+        for (var k in shop.cosmetics) {
+            if (k === 'explorer') continue; // exclude free default
+            allKeys.push(k);
+        }
+
+        var rotationIndex = Math.floor(Date.now() / ROTATION_MS);
+        var rng = seededRandom(rotationIndex);
+
+        // Shuffle using seeded RNG and pick first 4
+        var shuffled = allKeys.slice();
+        for (var i = shuffled.length - 1; i > 0; i--) {
+            var j = Math.floor(rng() * (i + 1));
+            var tmp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = tmp;
+        }
+
+        return shuffled.slice(0, 4);
+    }
+
+    function getTimeUntilRefresh() {
+        var now = Date.now();
+        var nextRefresh = (Math.floor(now / ROTATION_MS) + 1) * ROTATION_MS;
+        return nextRefresh - now;
+    }
+
+    function formatCountdown(ms) {
+        var totalSec = Math.floor(ms / 1000);
+        var h = Math.floor(totalSec / 3600);
+        var m = Math.floor((totalSec % 3600) / 60);
+        var s = totalSec % 60;
+        return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function updateRefreshTimer() {
+        var remaining = getTimeUntilRefresh();
+        ui.shopRefreshTimer.textContent = 'Refreshes in ' + formatCountdown(remaining);
+    }
+
+    function startShopTimer() {
+        if (shopTimerInterval) clearInterval(shopTimerInterval);
+        updateRefreshTimer();
+        var lastRotation = Math.floor(Date.now() / ROTATION_MS);
+        shopTimerInterval = setInterval(function () {
+            var currentRotation = Math.floor(Date.now() / ROTATION_MS);
+            if (currentRotation !== lastRotation) {
+                // Rotation changed — re-render shop
+                lastRotation = currentRotation;
+                renderShop();
+            }
+            updateRefreshTimer();
+        }, 1000);
+    }
+
+    function stopShopTimer() {
+        if (shopTimerInterval) {
+            clearInterval(shopTimerInterval);
+            shopTimerInterval = null;
         }
     }
 
@@ -589,9 +672,11 @@
         }
         ui.shopPU.innerHTML = puHTML;
 
-        // Cosmetics
+        // Featured Outfits (rotating every 6 hours)
+        var featured = getRotatingOutfits();
         var cosHTML = '';
-        for (var c in shop.cosmetics) {
+        for (var fi = 0; fi < featured.length; fi++) {
+            var c = featured[fi];
             var cos = shop.cosmetics[c];
             var isActive = shop.activeOutfit === c;
             var canBuyCos = shop.wallet >= cos.cost;
@@ -609,6 +694,7 @@
             cosHTML += '</div>';
         }
         ui.shopCos.innerHTML = cosHTML;
+        updateRefreshTimer();
 
         // Loot Crates
         var icons = shop.icons;

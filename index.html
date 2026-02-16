@@ -294,6 +294,19 @@
             max-width: 540px;
             text-align: left;
         }
+        .shop-section-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shop-refresh-timer {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 1px;
+            text-transform: none;
+        }
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -1241,7 +1254,10 @@
             <div class="shop-wallet"><span class="coin-icon"></span> <span id="shop-wallet">0</span></div>
             <div class="shop-section-title">Power-Ups</div>
             <div class="shop-grid" id="shop-powerups"></div>
-            <div class="shop-section-title">Outfits</div>
+            <div class="shop-section-title shop-section-title-row">
+                <span>Featured Outfits</span>
+                <span class="shop-refresh-timer" id="shop-refresh-timer"></span>
+            </div>
             <div class="shop-grid" id="shop-cosmetics"></div>
             <div class="shop-section-title">Loot Crates</div>
             <div class="shop-crate-section" id="shop-crates"></div>
