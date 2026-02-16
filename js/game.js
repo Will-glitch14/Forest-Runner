@@ -242,7 +242,9 @@
     }, { passive: false });
 
     document.addEventListener('touchmove', function (e) {
-        e.preventDefault();
+        if (S.mode === 'playing' || S.mode === 'dying' || S.mode === 'start' || S.mode === 'gameover') {
+            e.preventDefault();
+        }
     }, { passive: false });
 
     function anyPressed(binds) {
@@ -353,7 +355,8 @@
     function checkCollisions() {
         for (var i = 0; i < FR.obsList.length; i++) {
             var obs = FR.obsList[i];
-            if (Math.abs(S.pZ - obs.z) > 1.8) continue;
+            var zHit = obs.type === 'gap' ? 1.9 : obs.type === 'low' ? 0.9 : 0.5;
+            if (Math.abs(S.pZ - obs.z) > zHit) continue;
             if (Math.abs(S.pX - C.LANES[obs.lane]) > C.LANE_W * 0.44) continue;
 
             if (obs.type === 'low' || obs.type === 'gap') {
