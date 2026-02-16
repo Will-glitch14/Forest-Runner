@@ -137,6 +137,12 @@
             shop.wallet = cloud.wallet;
         }
 
+        // Seed totalCoins from wallet for existing players (one-time migration)
+        if (S.totalCoins === 0 && shop.wallet > 0) {
+            S.totalCoins = shop.wallet;
+            try { localStorage.setItem('fr_tc', String(S.totalCoins)); } catch (e) {}
+        }
+
         // Shop data
         if (cloud.shop) {
             // Active outfit from cloud

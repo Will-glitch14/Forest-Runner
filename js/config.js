@@ -116,6 +116,12 @@ FR.Shop = {
             }
         }
     } catch (e) {}
+
+    // Seed totalCoins from wallet for existing players (one-time migration)
+    if (FR.S.totalCoins === 0 && FR.Shop.wallet > 0) {
+        FR.S.totalCoins = FR.Shop.wallet;
+        try { localStorage.setItem('fr_tc', String(FR.S.totalCoins)); } catch (e) {}
+    }
 })();
 
 FR.Shop.save = function () {
