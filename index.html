@@ -20,8 +20,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { overflow: hidden; background: #000; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; touch-action: none; }
-        canvas { display: block; }
+        body { overflow: hidden; background: #000; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
+        canvas { display: block; touch-action: none; }
 
         /* ---- Loading Screen ---- */
         #loading {
@@ -130,6 +130,7 @@
             align-items: center; justify-content: center;
             text-align: center; color: #fff;
             transition: opacity 0.5s ease;
+            touch-action: none;
         }
         .screen.hidden {
             opacity: 0; pointer-events: none; visibility: hidden;
@@ -261,6 +262,7 @@
             padding: 30px 20px;
             align-items: center;
             justify-content: flex-start;
+            touch-action: pan-y;
         }
         #shop-screen h1 {
             font-family: 'Russo One', sans-serif;
@@ -419,6 +421,7 @@
             padding: 30px 20px;
             align-items: center;
             justify-content: flex-start;
+            touch-action: pan-y;
         }
         #settings-screen h1 {
             font-family: 'Russo One', sans-serif;
@@ -753,6 +756,7 @@
             padding: 30px 20px;
             align-items: center;
             justify-content: flex-start;
+            touch-action: pan-y;
         }
         #leaderboard-screen h1 {
             font-family: 'Russo One', sans-serif;
