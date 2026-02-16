@@ -59,10 +59,14 @@
         lbBack:     document.getElementById('lb-back'),
         startLbBtn: document.getElementById('start-lb-btn'),
         goLbBtn:    document.getElementById('go-lb-btn'),
+        lbTabScore: document.getElementById('lb-tab-score'),
+        lbTabCoins: document.getElementById('lb-tab-coins'),
+        lbHeaderValue: document.getElementById('lb-header-value'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
     var settingsReturnTo = 'start';
     var lbReturnTo = 'start';
+    var lbActiveTab = 'score';
     var usernameReturnMode = 'start'; // mode to restore after username picker
     var rebindTarget = null; // { action, index } when listening for key
 
@@ -944,13 +948,25 @@
         ui.startScr.classList.add('hidden');
         ui.overScr.classList.add('hidden');
         ui.lbScr.classList.remove('hidden');
-        renderLeaderboard([]);
+
+        // Reset to score tab
+        lbActiveTab = 'score';
+        ui.lbTabScore.classList.add('active');
+        ui.lbTabCoins.classList.remove('active');
+        ui.lbHeaderValue.textContent = 'Score';
+
+        fetchAndRenderTab();
+    }
+
+    function fetchAndRenderTab() {
+        renderLeaderboard([], lbActiveTab);
         ui.lbEmpty.style.display = 'none';
         ui.lbHint.style.display = 'none';
 
         if (FR.Fire && FR.Fire.isAvailable()) {
-            FR.Fire.fetchLeaderboard(function (data) {
-                renderLeaderboard(data);
+            var fetchFn = lbActiveTab === 'coins' ? FR.Fire.fetchCoinLeaderboard : FR.Fire.fetchLeaderboard;
+            fetchFn(function (data) {
+                renderLeaderboard(data, lbActiveTab);
             });
             if (!FR.Fire.isSignedIn()) {
                 ui.lbHint.style.display = 'block';
@@ -971,7 +987,9 @@
         }
     }
 
-    function renderLeaderboard(data) {
+    function renderLeaderboard(data, type) {
+        var isCoins = type === 'coins';
+
         // Keep the header row, clear the rest
         var header = ui.lbTable.querySelector('.lb-header');
         ui.lbTable.innerHTML = '';
@@ -1015,10 +1033,15 @@
             name.textContent = entry.username;
             row.appendChild(name);
 
-            var score = document.createElement('span');
-            score.className = 'lb-score';
-            score.textContent = Math.floor(entry.highScore);
-            row.appendChild(score);
+            var val = document.createElement('span');
+            val.className = 'lb-score';
+            if (isCoins) {
+                val.style.color = '#ffd700';
+                val.textContent = (entry.totalCoins || 0).toLocaleString();
+            } else {
+                val.textContent = Math.floor(entry.highScore);
+            }
+            row.appendChild(val);
 
             ui.lbTable.appendChild(row);
         }
@@ -1028,6 +1051,24 @@
     ui.startLbBtn.addEventListener('click', function () { openLeaderboard('start'); });
     ui.goLbBtn.addEventListener('click', function () { openLeaderboard('gameover'); });
     ui.lbBack.addEventListener('click', function () { closeLeaderboard(); });
+
+    // Leaderboard tab handlers
+    ui.lbTabScore.addEventListener('click', function () {
+        if (lbActiveTab === 'score') return;
+        lbActiveTab = 'score';
+        ui.lbTabScore.classList.add('active');
+        ui.lbTabCoins.classList.remove('active');
+        ui.lbHeaderValue.textContent = 'Score';
+        fetchAndRenderTab();
+    });
+    ui.lbTabCoins.addEventListener('click', function () {
+        if (lbActiveTab === 'coins') return;
+        lbActiveTab = 'coins';
+        ui.lbTabCoins.classList.add('active');
+        ui.lbTabScore.classList.remove('active');
+        ui.lbHeaderValue.textContent = 'Coins';
+        fetchAndRenderTab();
+    });
 
     function goHome() {
         // Clear world objects
@@ -1128,8 +1169,10 @@
         S.mode = 'gameover';
         var isNew = false;
 
-        // Add run coins to wallet
+        // Add run coins to wallet and accumulate total
         FR.Shop.wallet += S.coins;
+        S.totalCoins += S.coins;
+        try { localStorage.setItem('fr_tc', String(S.totalCoins)); } catch (e) {}
         FR.Shop.save();
 
         if (Math.floor(S.score) > S.highScore) {

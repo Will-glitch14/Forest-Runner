@@ -55,6 +55,7 @@ FR.S = {
     deathTimer: 0,
     highScore:  0,
     highCoins:  0,
+    totalCoins: 0,
     shieldActive: false,
     magnetActive: false,
     doubleCoins:  false,
@@ -64,6 +65,7 @@ FR.S = {
 try {
     FR.S.highScore = parseInt(localStorage.getItem('fr_hs') || '0', 10);
     FR.S.highCoins = parseInt(localStorage.getItem('fr_hc') || '0', 10);
+    FR.S.totalCoins = parseInt(localStorage.getItem('fr_tc') || '0', 10);
 } catch (e) { /* localStorage not available */ }
 
 // ---- Shop Data ----

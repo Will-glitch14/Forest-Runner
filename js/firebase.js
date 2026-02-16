@@ -127,6 +127,10 @@
             S.highCoins = cloud.highCoins;
             try { localStorage.setItem('fr_hc', String(S.highCoins)); } catch (e) {}
         }
+        if (cloud.totalCoins && cloud.totalCoins > S.totalCoins) {
+            S.totalCoins = cloud.totalCoins;
+            try { localStorage.setItem('fr_tc', String(S.totalCoins)); } catch (e) {}
+        }
 
         // Wallet: take higher
         if (cloud.wallet && cloud.wallet > shop.wallet) {
@@ -218,6 +222,7 @@
         var data = {
             highScore: S.highScore,
             highCoins: S.highCoins,
+            totalCoins: S.totalCoins,
             wallet: shop.wallet,
             shop: {
                 activeOutfit: shop.activeOutfit,
@@ -245,6 +250,7 @@
                         username: username,
                         photoURL: currentUser.photoURL || '',
                         highScore: S.highScore,
+                        totalCoins: S.totalCoins,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true }).catch(function () {});
                 }
@@ -323,6 +329,7 @@
             username: name,
             photoURL: currentUser.photoURL || '',
             highScore: FR.S.highScore,
+            totalCoins: FR.S.totalCoins,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         batch.commit()
@@ -366,6 +373,30 @@
             });
     }
 
+    function fetchCoinLeaderboard(callback) {
+        if (!available || !db) { callback([]); return; }
+        db.collection('leaderboard')
+            .orderBy('totalCoins', 'desc')
+            .limit(20)
+            .get()
+            .then(function (snap) {
+                var results = [];
+                snap.forEach(function (doc) {
+                    var d = doc.data();
+                    results.push({
+                        uid: d.uid || doc.id,
+                        username: d.username || 'Player',
+                        photoURL: d.photoURL || '',
+                        totalCoins: d.totalCoins || 0
+                    });
+                });
+                callback(results);
+            })
+            .catch(function () {
+                callback([]);
+            });
+    }
+
     // ============================================================
     // PUBLIC API
     // ============================================================
@@ -380,6 +411,7 @@
         getUsername: getUsername,
         setUsername: setUsername,
         fetchLeaderboard: fetchLeaderboard,
+        fetchCoinLeaderboard: fetchCoinLeaderboard,
         updateAuthUI: updateAuthUI,
         onNeedUsername: null  // set by game.js to open username modal
     };

@@ -850,6 +850,35 @@
             margin-top: 20px;
             letter-spacing: 1px;
         }
+        .lb-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .lb-tab {
+            padding: 7px 22px;
+            border: 2px solid rgba(74,168,255,0.25);
+            border-radius: 20px;
+            background: rgba(74,168,255,0.08);
+            color: rgba(255,255,255,0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .lb-tab:hover {
+            background: rgba(74,168,255,0.15);
+            border-color: rgba(74,168,255,0.4);
+        }
+        .lb-tab.active {
+            background: rgba(74,168,255,0.2);
+            border-color: #4aa8ff;
+            color: #4aa8ff;
+        }
 
         /* Flash overlay */
         #flash {
@@ -1016,12 +1045,16 @@
         <!-- Leaderboard -->
         <div id="leaderboard-screen" class="screen hidden">
             <h1>LEADERBOARD</h1>
+            <div class="lb-tabs">
+                <button class="lb-tab active" id="lb-tab-score">Score</button>
+                <button class="lb-tab" id="lb-tab-coins">Coins</button>
+            </div>
             <div class="lb-table" id="lb-table">
                 <div class="lb-header">
                     <span class="lb-rank">#</span>
                     <span style="width:38px;flex-shrink:0;"></span>
                     <span class="lb-name">Player</span>
-                    <span class="lb-score" style="color:rgba(255,255,255,0.4);">Score</span>
+                    <span class="lb-score" id="lb-header-value" style="color:rgba(255,255,255,0.4);">Score</span>
                 </div>
             </div>
             <div class="lb-empty" id="lb-empty" style="display:none;">No scores yet. Be the first!</div>
