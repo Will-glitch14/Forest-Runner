@@ -62,6 +62,19 @@
         lbTabScore: document.getElementById('lb-tab-score'),
         lbTabCoins: document.getElementById('lb-tab-coins'),
         lbHeaderValue: document.getElementById('lb-header-value'),
+        // Crate system
+        shopCrates:   document.getElementById('shop-crates'),
+        shopIconGrid: document.getElementById('shop-icon-grid'),
+        crateReveal:  document.getElementById('crate-reveal'),
+        crateRevealCard: document.getElementById('crate-reveal-card'),
+        crateRevealIcon: document.getElementById('crate-reveal-icon'),
+        crateRevealName: document.getElementById('crate-reveal-name'),
+        crateRevealRarity: document.getElementById('crate-reveal-rarity'),
+        crateRevealHint: document.getElementById('crate-reveal-hint'),
+        crateRevealParticles: document.getElementById('crate-reveal-particles'),
+        // Settings icon picker
+        settingsIconRow:    document.getElementById('settings-icon-row'),
+        settingsIconPicker: document.getElementById('settings-icon-picker'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
     var settingsReturnTo = 'start';
@@ -596,6 +609,46 @@
             cosHTML += '</div>';
         }
         ui.shopCos.innerHTML = cosHTML;
+
+        // Loot Crates
+        var icons = shop.icons;
+        var unownedKeys = [];
+        for (var ik in icons) {
+            if (!icons[ik].owned) unownedKeys.push(ik);
+        }
+        var crateHTML = '';
+        if (unownedKeys.length > 0) {
+            var canBuyCrate = shop.wallet >= shop.CRATE_COST;
+            crateHTML += '<div class="shop-crate-buy">';
+            crateHTML += '<div class="shop-crate-emoji">\u{1F4E6}</div>';
+            crateHTML += '<button class="shop-btn buy" data-action="buy-crate"' + (canBuyCrate ? '' : ' disabled') + '>' + shop.CRATE_COST + ' Open</button>';
+            crateHTML += '<div class="shop-crate-remaining">' + unownedKeys.length + ' remaining</div>';
+            crateHTML += '</div>';
+        } else {
+            crateHTML += '<div class="shop-crate-complete">Collection Complete!</div>';
+        }
+        ui.shopCrates.innerHTML = crateHTML;
+
+        // Icon collection grid
+        var iconGridHTML = '';
+        for (var ig in icons) {
+            var ic = icons[ig];
+            var isEquipped = shop.activeIcon === ig;
+            var rarityColor = shop.RARITY_COLORS[ic.rarity] || '#aaa';
+            if (ic.owned) {
+                iconGridHTML += '<div class="shop-icon-cell' + (isEquipped ? ' equipped' : '') + '" data-action="equip-icon" data-key="' + ig + '">';
+                iconGridHTML += '<div class="shop-icon-preview" style="background:' + ic.bg + '">' + ic.icon + '</div>';
+                iconGridHTML += '<div class="shop-icon-name">' + ic.name + '</div>';
+                iconGridHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
+                iconGridHTML += '</div>';
+            } else {
+                iconGridHTML += '<div class="shop-icon-cell locked">';
+                iconGridHTML += '<div class="shop-icon-preview locked-preview">?</div>';
+                iconGridHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
+                iconGridHTML += '</div>';
+            }
+        }
+        ui.shopIconGrid.innerHTML = iconGridHTML;
     }
 
     function renderStartPowerups() {
@@ -648,7 +701,168 @@
                 shop.save();
                 renderShop();
             }
+        } else if (action === 'buy-crate') {
+            openCrate();
+        } else if (action === 'equip-icon') {
+            if (shop.icons[key] && shop.icons[key].owned) {
+                shop.activeIcon = (shop.activeIcon === key) ? null : key;
+                shop.save();
+                renderShop();
+            }
         }
+    });
+
+    // ============================================================
+    // LOOT CRATE SYSTEM
+    // ============================================================
+    var RARITY_WEIGHTS = {
+        common:    40,
+        uncommon:  30,
+        rare:      20,
+        epic:       8,
+        legendary:  2
+    };
+
+    function rollRarity() {
+        var roll = Math.random() * 100;
+        var cumulative = 0;
+        for (var r in RARITY_WEIGHTS) {
+            cumulative += RARITY_WEIGHTS[r];
+            if (roll < cumulative) return r;
+        }
+        return 'common';
+    }
+
+    function getUnownedByRarity(rarity) {
+        var icons = FR.Shop.icons;
+        var keys = [];
+        for (var k in icons) {
+            if (!icons[k].owned && icons[k].rarity === rarity) keys.push(k);
+        }
+        return keys;
+    }
+
+    function getAllUnowned() {
+        var icons = FR.Shop.icons;
+        var keys = [];
+        for (var k in icons) {
+            if (!icons[k].owned) keys.push(k);
+        }
+        return keys;
+    }
+
+    function rollCrateIcon() {
+        var unowned = getAllUnowned();
+        if (unowned.length === 0) return null;
+
+        // Try weighted rarity roll, reroll if that rarity has no unowned icons
+        for (var attempt = 0; attempt < 20; attempt++) {
+            var rarity = rollRarity();
+            var pool = getUnownedByRarity(rarity);
+            if (pool.length > 0) {
+                return pool[Math.floor(Math.random() * pool.length)];
+            }
+        }
+        // Fallback: pick any unowned icon
+        return unowned[Math.floor(Math.random() * unowned.length)];
+    }
+
+    function openCrate() {
+        var shop = FR.Shop;
+        if (shop.wallet < shop.CRATE_COST) return;
+
+        var unowned = getAllUnowned();
+        if (unowned.length === 0) return;
+
+        var wonKey = rollCrateIcon();
+        if (!wonKey) return;
+
+        // Deduct cost and award icon
+        shop.wallet -= shop.CRATE_COST;
+        shop.icons[wonKey].owned = true;
+        shop.save();
+
+        showCrateReveal(wonKey);
+    }
+
+    function showCrateReveal(iconKey) {
+        var ic = FR.Shop.icons[iconKey];
+        var rarityColor = FR.Shop.RARITY_COLORS[ic.rarity] || '#aaa';
+
+        // Reset animation classes
+        ui.crateRevealCard.classList.remove('animate-in');
+        ui.crateRevealIcon.classList.remove('animate-in');
+        ui.crateRevealName.classList.remove('animate-in');
+        ui.crateRevealRarity.classList.remove('animate-in');
+        ui.crateRevealHint.classList.remove('animate-in');
+
+        // Set content
+        ui.crateRevealIcon.textContent = ic.icon;
+        ui.crateRevealIcon.style.background = ic.bg;
+        ui.crateRevealName.textContent = ic.name;
+        ui.crateRevealRarity.textContent = ic.rarity;
+        ui.crateRevealRarity.style.color = rarityColor;
+        ui.crateRevealCard.style.borderColor = rarityColor;
+
+        // Spawn particles
+        spawnCrateParticles(rarityColor);
+
+        // Show modal
+        ui.crateReveal.classList.remove('hidden');
+
+        // Stagger animations with requestAnimationFrame for clean start
+        requestAnimationFrame(function () {
+            ui.crateReveal.classList.add('visible-bg');
+            ui.crateRevealCard.classList.add('animate-in');
+            ui.crateRevealIcon.classList.add('animate-in');
+            ui.crateRevealName.classList.add('animate-in');
+            ui.crateRevealRarity.classList.add('animate-in');
+            ui.crateRevealHint.classList.add('animate-in');
+        });
+
+        // Play sound if available
+        if (A.play) A.play('coin');
+    }
+
+    function spawnCrateParticles(color) {
+        ui.crateRevealParticles.innerHTML = '';
+        var count = 16;
+        for (var i = 0; i < count; i++) {
+            var angle = (i / count) * Math.PI * 2;
+            var dist = 60 + Math.random() * 50;
+            var px = Math.cos(angle) * dist;
+            var py = Math.sin(angle) * dist;
+            var dot = document.createElement('div');
+            dot.className = 'crate-particle';
+            dot.style.background = color;
+            dot.style.setProperty('--px', px + 'px');
+            dot.style.setProperty('--py', py + 'px');
+            dot.style.animationDelay = (0.3 + Math.random() * 0.15) + 's';
+            ui.crateRevealParticles.appendChild(dot);
+            // Trigger burst class in next frame
+            requestAnimationFrame(function (el) {
+                return function () { el.classList.add('burst'); };
+            }(dot));
+        }
+    }
+
+    function closeCrateReveal() {
+        ui.crateReveal.classList.remove('visible-bg');
+        ui.crateRevealCard.classList.remove('animate-in');
+        ui.crateRevealIcon.classList.remove('animate-in');
+        ui.crateRevealName.classList.remove('animate-in');
+        ui.crateRevealRarity.classList.remove('animate-in');
+        ui.crateRevealHint.classList.remove('animate-in');
+        setTimeout(function () {
+            ui.crateReveal.classList.add('hidden');
+            ui.crateRevealParticles.innerHTML = '';
+            renderShop();
+        }, 300);
+    }
+
+    // Dismiss crate reveal on click
+    ui.crateReveal.addEventListener('click', function () {
+        closeCrateReveal();
     });
 
     ui.shopBack.addEventListener('click', function () { closeShop(); });
@@ -736,6 +950,27 @@
             ui.settingsUsernameMsg.textContent = '';
             ui.settingsUsernameMsg.className = 'settings-username-msg';
         }
+
+        // Icon picker (show if any icons owned)
+        var icons = FR.Shop.icons;
+        var ownedCount = 0;
+        for (var oik in icons) { if (icons[oik].owned) ownedCount++; }
+        ui.settingsIconRow.style.display = ownedCount > 0 ? 'block' : 'none';
+        if (ownedCount > 0) {
+            var pickerHTML = '';
+            // "None" option
+            pickerHTML += '<div class="settings-icon-option settings-icon-default' +
+                          (!FR.Shop.activeIcon ? ' active' : '') + '" data-icon-key="">' +
+                          '\u2715</div>';
+            for (var sik in icons) {
+                if (!icons[sik].owned) continue;
+                var isActive = FR.Shop.activeIcon === sik;
+                pickerHTML += '<div class="settings-icon-option' + (isActive ? ' active' : '') +
+                              '" data-icon-key="' + sik + '" style="background:' + icons[sik].bg + '">' +
+                              icons[sik].icon + '</div>';
+            }
+            ui.settingsIconPicker.innerHTML = pickerHTML;
+        }
     }
 
     function updateCtrlGrid() {
@@ -750,6 +985,16 @@
             '<span class="ctrl-key">' + jumpKeys + '</span><span class="ctrl-desc">Jump</span>' +
             '<span class="ctrl-key">' + slideKeys + '</span><span class="ctrl-desc">Slide</span>';
     }
+
+    // Settings icon picker click handler
+    ui.settingsIconPicker.addEventListener('click', function (e) {
+        var opt = e.target.closest('.settings-icon-option');
+        if (!opt) return;
+        var key = opt.getAttribute('data-icon-key');
+        FR.Shop.activeIcon = key || null;
+        FR.Shop.save();
+        renderSettings();
+    });
 
     // Volume slider
     ui.volSlider.addEventListener('input', function () {

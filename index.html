@@ -893,6 +893,263 @@
             0%, 100% { opacity: 0.4; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.03); }
         }
+
+        /* ---- Crate Reveal Modal ---- */
+        .crate-reveal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0);
+            z-index: 100;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: auto;
+            transition: background 0.4s ease;
+        }
+        .crate-reveal.visible-bg { background: rgba(0,0,0,0.88); }
+        .crate-reveal.hidden { display: none; }
+        .crate-reveal-card {
+            width: 200px; height: 240px;
+            background: rgba(30,30,40,0.95);
+            border-radius: 16px;
+            border: 3px solid #aaa;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px;
+            transform: scale(0);
+            opacity: 0;
+            transition: border-color 0.3s;
+        }
+        .crate-reveal-card.animate-in {
+            animation: crateRevealPop 0.6s cubic-bezier(0.17,0.89,0.32,1.28) forwards;
+        }
+        .crate-reveal-icon {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px;
+            opacity: 0;
+            transform: scale(0.3);
+        }
+        .crate-reveal-icon.animate-in {
+            animation: crateIconReveal 0.5s 0.4s cubic-bezier(0.17,0.89,0.32,1.28) forwards,
+                       crateIconGlow 1.5s 0.9s ease-in-out infinite;
+        }
+        .crate-reveal-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            opacity: 0;
+        }
+        .crate-reveal-name.animate-in {
+            animation: crateFadeUp 0.3s 0.7s ease-out forwards;
+        }
+        .crate-reveal-rarity {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+        }
+        .crate-reveal-rarity.animate-in {
+            animation: crateFadeUp 0.3s 0.85s ease-out forwards;
+        }
+        .crate-reveal-hint {
+            margin-top: 24px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            opacity: 0;
+        }
+        .crate-reveal-hint.animate-in {
+            animation: crateFadeUp 0.3s 1.1s ease-out forwards, pulse 2s 1.4s ease-in-out infinite;
+        }
+        .crate-reveal-particles {
+            position: absolute;
+            width: 200px; height: 200px;
+            pointer-events: none;
+        }
+        .crate-particle {
+            position: absolute;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            opacity: 0;
+        }
+        .crate-particle.burst {
+            animation: crateParticleBurst 0.8s 0.35s ease-out forwards;
+        }
+        @keyframes crateRevealPop {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            70% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes crateIconReveal {
+            0% { opacity: 0; transform: scale(0.3); }
+            60% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes crateIconGlow {
+            0%, 100% { box-shadow: 0 0 12px rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 32px rgba(255,255,255,0.6); }
+        }
+        @keyframes crateFadeUp {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes crateParticleBurst {
+            0% { opacity: 1; transform: translate(0,0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+        }
+
+        /* ---- Shop Crate Section ---- */
+        .shop-crate-section {
+            width: 100%;
+            max-width: 540px;
+            margin-bottom: 12px;
+        }
+        .shop-crate-buy {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 10px;
+        }
+        .shop-crate-buy:hover {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+        .shop-crate-emoji {
+            font-size: 48px;
+            line-height: 1;
+        }
+        .shop-crate-remaining {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+        .shop-crate-complete {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5cb85c;
+            padding: 16px;
+        }
+
+        /* ---- Shop Icon Collection Grid ---- */
+        .shop-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+            gap: 8px;
+            width: 100%;
+            max-width: 540px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+        }
+        .shop-icon-cell {
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 8px 4px;
+            text-align: center;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .shop-icon-cell:hover {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+        .shop-icon-cell.equipped {
+            border-color: #5cb85c;
+            background: rgba(92,184,92,0.12);
+        }
+        .shop-icon-cell.locked {
+            cursor: default;
+            opacity: 0.5;
+        }
+        .shop-icon-cell.locked:hover {
+            border-color: rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.07);
+        }
+        .shop-icon-preview {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .locked-preview {
+            background: rgba(255,255,255,0.08) !important;
+            font-size: 18px;
+            color: rgba(255,255,255,0.3);
+        }
+        .shop-icon-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+        }
+        .shop-icon-rarity {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ---- Settings Icon Picker ---- */
+        .settings-icon-row {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .settings-icon-picker {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .settings-icon-option {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            border: 2px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .settings-icon-option:hover {
+            border-color: rgba(255,255,255,0.4);
+            transform: scale(1.08);
+        }
+        .settings-icon-option.active {
+            border-color: #5cb85c;
+            box-shadow: 0 0 10px rgba(92,184,92,0.4);
+        }
+        .settings-icon-default {
+            font-size: 16px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* ---- Auth/LB Icon Avatar ---- */
+        .auth-icon-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .lb-icon-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            margin-right: 10px;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -981,6 +1238,9 @@
             <div class="shop-grid" id="shop-powerups"></div>
             <div class="shop-section-title">Outfits</div>
             <div class="shop-grid" id="shop-cosmetics"></div>
+            <div class="shop-section-title">Loot Crates</div>
+            <div class="shop-crate-section" id="shop-crates"></div>
+            <div class="shop-icon-grid" id="shop-icon-grid"></div>
             <button class="shop-back-btn" id="shop-back">Back</button>
         </div>
 
@@ -1027,6 +1287,10 @@
                     </div>
                     <div class="settings-username-msg" id="settings-username-msg"></div>
                 </div>
+                <div class="settings-icon-row" id="settings-icon-row" style="display:none;">
+                    <div class="settings-username-label">Profile Icon</div>
+                    <div class="settings-icon-picker" id="settings-icon-picker"></div>
+                </div>
             </div>
 
             <button class="shop-back-btn" id="settings-back">Back</button>
@@ -1060,6 +1324,17 @@
             <div class="lb-empty" id="lb-empty" style="display:none;">No scores yet. Be the first!</div>
             <div class="lb-signin-hint" id="lb-signin-hint" style="display:none;">Sign in to submit your score</div>
             <button class="shop-back-btn" id="lb-back">Back</button>
+        </div>
+
+        <!-- Crate Reveal Modal -->
+        <div id="crate-reveal" class="crate-reveal hidden">
+            <div class="crate-reveal-particles" id="crate-reveal-particles"></div>
+            <div class="crate-reveal-card" id="crate-reveal-card">
+                <div class="crate-reveal-icon" id="crate-reveal-icon"></div>
+                <div class="crate-reveal-name" id="crate-reveal-name"></div>
+                <div class="crate-reveal-rarity" id="crate-reveal-rarity"></div>
+            </div>
+            <div class="crate-reveal-hint" id="crate-reveal-hint">Tap to continue</div>
         </div>
     </div>
 

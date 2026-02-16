@@ -174,6 +174,20 @@
                     }
                 }
             }
+
+            // Icons owned: union (true on either side = true)
+            if (cloud.shop.icons) {
+                for (var ik in cloud.shop.icons) {
+                    if (shop.icons[ik] && cloud.shop.icons[ik].owned) {
+                        shop.icons[ik].owned = true;
+                    }
+                }
+            }
+
+            // activeIcon: cloud wins
+            if (cloud.shop.activeIcon !== undefined) {
+                shop.activeIcon = cloud.shop.activeIcon;
+            }
         }
 
         // Settings: cloud wins
@@ -224,6 +238,10 @@
         for (var ck in shop.cosmetics) {
             cosmetics[ck] = { owned: shop.cosmetics[ck].owned };
         }
+        var icons = {};
+        for (var ik in shop.icons) {
+            icons[ik] = { owned: shop.icons[ik].owned };
+        }
 
         var data = {
             highScore: S.highScore,
@@ -232,8 +250,10 @@
             wallet: shop.wallet,
             shop: {
                 activeOutfit: shop.activeOutfit,
+                activeIcon: shop.activeIcon || null,
                 powerups: powerups,
-                cosmetics: cosmetics
+                cosmetics: cosmetics,
+                icons: icons
             },
             settings: {
                 volume: FR.Settings.volume,
@@ -257,6 +277,7 @@
                         photoURL: currentUser.photoURL || '',
                         highScore: S.highScore,
                         totalCoins: S.totalCoins,
+                        activeIcon: shop.activeIcon || null,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true }).catch(function () {});
                 }
@@ -294,14 +315,36 @@
         // Fill in user data
         if (signedIn && user) {
             var displayStr = username || user.displayName || 'Player';
-            var avatars = document.querySelectorAll('.auth-avatar');
             var names = document.querySelectorAll('.auth-name');
-            for (var i = 0; i < avatars.length; i++) {
-                avatars[i].src = user.photoURL || '';
-                avatars[i].style.display = user.photoURL ? 'block' : 'none';
-            }
             for (var j = 0; j < names.length; j++) {
                 names[j].textContent = displayStr;
+            }
+
+            // Avatar: show icon if activeIcon set, otherwise Google photo
+            var profiles = document.querySelectorAll('.auth-profile');
+            for (var p = 0; p < profiles.length; p++) {
+                var prof = profiles[p];
+                var imgAvatar = prof.querySelector('.auth-avatar');
+                var iconAvatar = prof.querySelector('.auth-icon-avatar');
+
+                if (FR.Shop.activeIcon && FR.Shop.icons[FR.Shop.activeIcon]) {
+                    var iconData = FR.Shop.icons[FR.Shop.activeIcon];
+                    if (imgAvatar) imgAvatar.style.display = 'none';
+                    if (!iconAvatar) {
+                        iconAvatar = document.createElement('div');
+                        iconAvatar.className = 'auth-icon-avatar';
+                        prof.insertBefore(iconAvatar, prof.firstChild);
+                    }
+                    iconAvatar.style.background = iconData.bg;
+                    iconAvatar.textContent = iconData.icon;
+                    iconAvatar.style.display = 'flex';
+                } else {
+                    if (iconAvatar) iconAvatar.style.display = 'none';
+                    if (imgAvatar) {
+                        imgAvatar.src = user.photoURL || '';
+                        imgAvatar.style.display = user.photoURL ? 'block' : 'none';
+                    }
+                }
             }
         }
     }
@@ -336,6 +379,7 @@
             photoURL: currentUser.photoURL || '',
             highScore: FR.S.highScore,
             totalCoins: FR.S.totalCoins,
+            activeIcon: FR.Shop.activeIcon || null,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         batch.commit()
@@ -369,7 +413,8 @@
                         uid: d.uid || doc.id,
                         username: d.username || 'Player',
                         photoURL: d.photoURL || '',
-                        highScore: d.highScore || 0
+                        highScore: d.highScore || 0,
+                        activeIcon: d.activeIcon || null
                     });
                 });
                 callback(results);
@@ -393,7 +438,8 @@
                         uid: d.uid || doc.id,
                         username: d.username || 'Player',
                         photoURL: d.photoURL || '',
-                        totalCoins: d.totalCoins || 0
+                        totalCoins: d.totalCoins || 0,
+                        activeIcon: d.activeIcon || null
                     });
                 });
                 callback(results);

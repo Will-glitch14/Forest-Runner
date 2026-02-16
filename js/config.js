@@ -94,6 +94,27 @@ FR.Shop = {
         phantom:   { name: 'Phantom',        cost: 200, owned: false, jacket: 0xf0f0f0, scarf: 0xcccccc, hat: 0xe0e0e0 },
     },
     activeOutfit: 'explorer',
+    icons: {
+        wolf:     { name: 'Wolf',     icon: '\u{1F43A}', bg: '#6b7b8d', rarity: 'common',    owned: false },
+        fox:      { name: 'Fox',      icon: '\u{1F98A}', bg: '#d4854a', rarity: 'common',    owned: false },
+        bear:     { name: 'Bear',     icon: '\u{1F43B}', bg: '#8b6542', rarity: 'common',    owned: false },
+        eagle:    { name: 'Eagle',    icon: '\u{1F985}', bg: '#5a7a4a', rarity: 'common',    owned: false },
+        deer:     { name: 'Deer',     icon: '\u{1F98C}', bg: '#9a7a52', rarity: 'common',    owned: false },
+        owl:      { name: 'Owl',      icon: '\u{1F989}', bg: '#7a6a5a', rarity: 'common',    owned: false },
+        rabbit:   { name: 'Rabbit',   icon: '\u{1F430}', bg: '#d4a0b0', rarity: 'uncommon',  owned: false },
+        paw:      { name: 'Paw',      icon: '\u{1F43E}', bg: '#8a6a5a', rarity: 'uncommon',  owned: false },
+        tree:     { name: 'Tree',     icon: '\u{1F332}', bg: '#2a6a3a', rarity: 'uncommon',  owned: false },
+        mushroom: { name: 'Mushroom', icon: '\u{1F344}', bg: '#a0522d', rarity: 'uncommon',  owned: false },
+        dragon:   { name: 'Dragon',   icon: '\u{1F432}', bg: '#3a8a4a', rarity: 'rare',      owned: false },
+        unicorn:  { name: 'Unicorn',  icon: '\u{1F984}', bg: '#b48adc', rarity: 'rare',      owned: false },
+        phoenix:  { name: 'Phoenix',  icon: '\u{1F525}', bg: '#cc4422', rarity: 'rare',      owned: false },
+        diamond:  { name: 'Diamond',  icon: '\u{1F48E}', bg: '#4a6acc', rarity: 'epic',      owned: false },
+        crown:    { name: 'Crown',    icon: '\u{1F451}', bg: '#aa8822', rarity: 'epic',       owned: false },
+        star:     { name: 'Star',     icon: '\u{2B50}',  bg: '#cc9900', rarity: 'legendary',  owned: false },
+    },
+    activeIcon: null,
+    CRATE_COST: 500,
+    RARITY_COLORS: { common: '#aaa', uncommon: '#5b5', rare: '#48f', epic: '#a5c', legendary: '#fa0' },
 };
 
 // Persist / load shop data
@@ -114,6 +135,12 @@ FR.Shop = {
                     FR.Shop.cosmetics[c].owned = saved.cosmetics[c].owned || false;
                 }
             }
+            if (saved.activeIcon !== undefined) FR.Shop.activeIcon = saved.activeIcon;
+            for (var ic in saved.icons || {}) {
+                if (FR.Shop.icons[ic]) {
+                    FR.Shop.icons[ic].owned = saved.icons[ic].owned || false;
+                }
+            }
         }
     } catch (e) {}
 
@@ -127,12 +154,15 @@ FR.Shop = {
 FR.Shop.save = function () {
     try {
         localStorage.setItem('fr_wallet', String(FR.Shop.wallet));
-        var data = { activeOutfit: FR.Shop.activeOutfit, powerups: {}, cosmetics: {} };
+        var data = { activeOutfit: FR.Shop.activeOutfit, activeIcon: FR.Shop.activeIcon, powerups: {}, cosmetics: {}, icons: {} };
         for (var k in FR.Shop.powerups) {
             data.powerups[k] = { qty: FR.Shop.powerups[k].qty, selected: FR.Shop.powerups[k].selected };
         }
         for (var c in FR.Shop.cosmetics) {
             data.cosmetics[c] = { owned: FR.Shop.cosmetics[c].owned };
+        }
+        for (var ic in FR.Shop.icons) {
+            data.icons[ic] = { owned: FR.Shop.icons[ic].owned };
         }
         localStorage.setItem('fr_shop', JSON.stringify(data));
     } catch (e) {}

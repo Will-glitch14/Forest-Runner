@@ -194,6 +194,27 @@ FR.Audio = (function () {
                 ol.start(t); ol.stop(t + 0.1);
                 break;
             }
+            case 'crate': {
+                // Ascending sine sweep
+                var oc = ctx.createOscillator(), gc = ctx.createGain();
+                oc.connect(gc); gc.connect(masterGain);
+                oc.type = 'sine';
+                oc.frequency.setValueAtTime(400, t);
+                oc.frequency.exponentialRampToValueAtTime(1200, t + 0.3);
+                gc.gain.setValueAtTime(0.18, t);
+                gc.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                oc.start(t); oc.stop(t + 0.4);
+                // Delayed triangle harmonic
+                var oc2 = ctx.createOscillator(), gc2 = ctx.createGain();
+                oc2.connect(gc2); gc2.connect(masterGain);
+                oc2.type = 'triangle';
+                oc2.frequency.setValueAtTime(800, t + 0.15);
+                oc2.frequency.exponentialRampToValueAtTime(2000, t + 0.45);
+                gc2.gain.setValueAtTime(0.12, t + 0.15);
+                gc2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                oc2.start(t + 0.15); oc2.stop(t + 0.5);
+                break;
+            }
         }
     }
 
