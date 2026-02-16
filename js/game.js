@@ -70,7 +70,6 @@
         lbHeaderValue: document.getElementById('lb-header-value'),
         // Crate system
         shopCrates:   document.getElementById('shop-crates'),
-        shopIconGrid: document.getElementById('shop-icon-grid'),
         crateReveal:  document.getElementById('crate-reveal'),
         crateRevealCard: document.getElementById('crate-reveal-card'),
         crateRevealIcon: document.getElementById('crate-reveal-icon'),
@@ -592,43 +591,50 @@
     function renderInventory() {
         var shop = FR.Shop;
 
-        // Owned outfits
+        // All outfits (owned shown with equip, unowned shown as locked)
         var outfitHTML = '';
-        var hasOutfit = false;
         for (var c in shop.cosmetics) {
             var cos = shop.cosmetics[c];
-            if (!cos.owned) continue;
-            hasOutfit = true;
             var isActive = shop.activeOutfit === c;
-            outfitHTML += '<div class="inv-outfit-card' + (isActive ? ' equipped' : '') + '" data-action="inv-equip-outfit" data-key="' + c + '">';
-            outfitHTML += '<div class="shop-card-swatch" style="background:#' + cos.jacket.toString(16).padStart(6, '0') + '"></div>';
-            outfitHTML += '<div class="shop-card-name">' + cos.name + '</div>';
-            if (isActive) {
-                outfitHTML += '<span class="shop-btn owned-label">Equipped</span>';
+            if (cos.owned) {
+                outfitHTML += '<div class="inv-outfit-card' + (isActive ? ' equipped' : '') + '" data-action="inv-equip-outfit" data-key="' + c + '">';
+                outfitHTML += '<div class="shop-card-swatch" style="background:#' + cos.jacket.toString(16).padStart(6, '0') + '"></div>';
+                outfitHTML += '<div class="shop-card-name">' + cos.name + '</div>';
+                if (isActive) {
+                    outfitHTML += '<span class="shop-btn owned-label">Equipped</span>';
+                } else {
+                    outfitHTML += '<button class="shop-btn equip" data-action="inv-equip-outfit" data-key="' + c + '">Equip</button>';
+                }
+                outfitHTML += '</div>';
             } else {
-                outfitHTML += '<button class="shop-btn equip" data-action="inv-equip-outfit" data-key="' + c + '">Equip</button>';
+                outfitHTML += '<div class="inv-outfit-card locked">';
+                outfitHTML += '<div class="shop-card-swatch" style="background:rgba(255,255,255,0.08)"></div>';
+                outfitHTML += '<div class="shop-card-name">' + cos.name + '</div>';
+                outfitHTML += '<span class="shop-btn owned-label">\u{1F512} Locked</span>';
+                outfitHTML += '</div>';
             }
-            outfitHTML += '</div>';
         }
-        if (!hasOutfit) outfitHTML = '<div class="inv-empty">No outfits yet. Buy some from the shop!</div>';
         ui.invOutfits.innerHTML = outfitHTML;
 
-        // Owned icons
+        // All icons (owned shown with equip, unowned shown as locked)
         var iconHTML = '';
-        var hasIcon = false;
         for (var ik in shop.icons) {
             var ic = shop.icons[ik];
-            if (!ic.owned) continue;
-            hasIcon = true;
             var isEquipped = shop.activeIcon === ik;
             var rarityColor = shop.RARITY_COLORS[ic.rarity] || '#aaa';
-            iconHTML += '<div class="shop-icon-cell' + (isEquipped ? ' equipped' : '') + '" data-action="inv-equip-icon" data-key="' + ik + '">';
-            iconHTML += '<div class="shop-icon-preview" style="background:' + ic.bg + '">' + ic.icon + '</div>';
-            iconHTML += '<div class="shop-icon-name">' + ic.name + '</div>';
-            iconHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
-            iconHTML += '</div>';
+            if (ic.owned) {
+                iconHTML += '<div class="shop-icon-cell' + (isEquipped ? ' equipped' : '') + '" data-action="inv-equip-icon" data-key="' + ik + '">';
+                iconHTML += '<div class="shop-icon-preview" style="background:' + ic.bg + '">' + ic.icon + '</div>';
+                iconHTML += '<div class="shop-icon-name">' + ic.name + '</div>';
+                iconHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
+                iconHTML += '</div>';
+            } else {
+                iconHTML += '<div class="shop-icon-cell locked">';
+                iconHTML += '<div class="shop-icon-preview locked-preview">?</div>';
+                iconHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
+                iconHTML += '</div>';
+            }
         }
-        if (!hasIcon) iconHTML = '<div class="inv-empty">No icons yet. Open some loot crates!</div>';
         ui.invIcons.innerHTML = iconHTML;
     }
 
@@ -808,27 +814,6 @@
             crateHTML += '<div class="shop-crate-complete">Collection Complete!</div>';
         }
         ui.shopCrates.innerHTML = crateHTML;
-
-        // Icon collection grid
-        var iconGridHTML = '';
-        for (var ig in icons) {
-            var ic = icons[ig];
-            var isEquipped = shop.activeIcon === ig;
-            var rarityColor = shop.RARITY_COLORS[ic.rarity] || '#aaa';
-            if (ic.owned) {
-                iconGridHTML += '<div class="shop-icon-cell' + (isEquipped ? ' equipped' : '') + '" data-action="equip-icon" data-key="' + ig + '">';
-                iconGridHTML += '<div class="shop-icon-preview" style="background:' + ic.bg + '">' + ic.icon + '</div>';
-                iconGridHTML += '<div class="shop-icon-name">' + ic.name + '</div>';
-                iconGridHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
-                iconGridHTML += '</div>';
-            } else {
-                iconGridHTML += '<div class="shop-icon-cell locked">';
-                iconGridHTML += '<div class="shop-icon-preview locked-preview">?</div>';
-                iconGridHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
-                iconGridHTML += '</div>';
-            }
-        }
-        ui.shopIconGrid.innerHTML = iconGridHTML;
     }
 
     function renderStartPowerups() {
@@ -883,12 +868,6 @@
             }
         } else if (action === 'buy-crate') {
             openCrate();
-        } else if (action === 'equip-icon') {
-            if (shop.icons[key] && shop.icons[key].owned) {
-                shop.activeIcon = (shop.activeIcon === key) ? null : key;
-                shop.save();
-                renderShop();
-            }
         }
     });
 
