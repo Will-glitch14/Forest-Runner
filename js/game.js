@@ -1469,7 +1469,7 @@
             val.className = 'lb-score';
             if (isCoins) {
                 val.style.color = '#ffd700';
-                val.textContent = (entry.totalCoins || 0).toLocaleString();
+                val.textContent = (entry.wallet || 0).toLocaleString();
             } else {
                 val.textContent = Math.floor(entry.highScore);
             }

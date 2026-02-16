@@ -276,7 +276,7 @@
                         username: username,
                         photoURL: currentUser.photoURL || '',
                         highScore: S.highScore,
-                        totalCoins: S.totalCoins,
+                        wallet: shop.wallet,
                         activeIcon: shop.activeIcon || null,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true }).catch(function () {});
@@ -378,7 +378,7 @@
             username: name,
             photoURL: currentUser.photoURL || '',
             highScore: FR.S.highScore,
-            totalCoins: FR.S.totalCoins,
+            wallet: FR.Shop.wallet,
             activeIcon: FR.Shop.activeIcon || null,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
@@ -427,7 +427,7 @@
     function fetchCoinLeaderboard(callback) {
         if (!available || !db) { callback([]); return; }
         db.collection('leaderboard')
-            .orderBy('totalCoins', 'desc')
+            .orderBy('wallet', 'desc')
             .limit(20)
             .get()
             .then(function (snap) {
@@ -438,7 +438,7 @@
                         uid: d.uid || doc.id,
                         username: d.username || 'Player',
                         photoURL: d.photoURL || '',
-                        totalCoins: d.totalCoins || 0,
+                        wallet: d.wallet || 0,
                         activeIcon: d.activeIcon || null
                     });
                 });
