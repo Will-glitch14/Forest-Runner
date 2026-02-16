@@ -29,7 +29,12 @@
         shopPU:     document.getElementById('shop-powerups'),
         shopCos:    document.getElementById('shop-cosmetics'),
         shopRefreshTimer: document.getElementById('shop-refresh-timer'),
-        shopBack:   document.getElementById('shop-back'),
+        shopBack:       document.getElementById('shop-back'),
+        shopInvBtn:     document.getElementById('shop-inventory-btn'),
+        invScr:         document.getElementById('inventory-screen'),
+        invOutfits:     document.getElementById('inv-outfits'),
+        invIcons:       document.getElementById('inv-icons'),
+        invBack:        document.getElementById('inv-back'),
         startPU:    document.getElementById('start-powerups'),
         startShopBtn: document.getElementById('start-shop-btn'),
         goShopBtn:  document.getElementById('go-shop-btn'),
@@ -564,6 +569,95 @@
             ui.overScr.classList.remove('hidden');
         }
     }
+
+    // ============================================================
+    // INVENTORY
+    // ============================================================
+    function openInventory() {
+        stopShopTimer();
+        ui.shopScr.classList.add('hidden');
+        ui.invScr.classList.remove('hidden');
+        S.mode = 'inventory';
+        renderInventory();
+    }
+
+    function closeInventory() {
+        ui.invScr.classList.add('hidden');
+        ui.shopScr.classList.remove('hidden');
+        S.mode = 'shop';
+        renderShop();
+        startShopTimer();
+    }
+
+    function renderInventory() {
+        var shop = FR.Shop;
+
+        // Owned outfits
+        var outfitHTML = '';
+        var hasOutfit = false;
+        for (var c in shop.cosmetics) {
+            var cos = shop.cosmetics[c];
+            if (!cos.owned) continue;
+            hasOutfit = true;
+            var isActive = shop.activeOutfit === c;
+            outfitHTML += '<div class="inv-outfit-card' + (isActive ? ' equipped' : '') + '" data-action="inv-equip-outfit" data-key="' + c + '">';
+            outfitHTML += '<div class="shop-card-swatch" style="background:#' + cos.jacket.toString(16).padStart(6, '0') + '"></div>';
+            outfitHTML += '<div class="shop-card-name">' + cos.name + '</div>';
+            if (isActive) {
+                outfitHTML += '<span class="shop-btn owned-label">Equipped</span>';
+            } else {
+                outfitHTML += '<button class="shop-btn equip" data-action="inv-equip-outfit" data-key="' + c + '">Equip</button>';
+            }
+            outfitHTML += '</div>';
+        }
+        if (!hasOutfit) outfitHTML = '<div class="inv-empty">No outfits yet. Buy some from the shop!</div>';
+        ui.invOutfits.innerHTML = outfitHTML;
+
+        // Owned icons
+        var iconHTML = '';
+        var hasIcon = false;
+        for (var ik in shop.icons) {
+            var ic = shop.icons[ik];
+            if (!ic.owned) continue;
+            hasIcon = true;
+            var isEquipped = shop.activeIcon === ik;
+            var rarityColor = shop.RARITY_COLORS[ic.rarity] || '#aaa';
+            iconHTML += '<div class="shop-icon-cell' + (isEquipped ? ' equipped' : '') + '" data-action="inv-equip-icon" data-key="' + ik + '">';
+            iconHTML += '<div class="shop-icon-preview" style="background:' + ic.bg + '">' + ic.icon + '</div>';
+            iconHTML += '<div class="shop-icon-name">' + ic.name + '</div>';
+            iconHTML += '<div class="shop-icon-rarity" style="color:' + rarityColor + '">' + ic.rarity + '</div>';
+            iconHTML += '</div>';
+        }
+        if (!hasIcon) iconHTML = '<div class="inv-empty">No icons yet. Open some loot crates!</div>';
+        ui.invIcons.innerHTML = iconHTML;
+    }
+
+    // Inventory click handler (event delegation)
+    ui.invScr.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var key = btn.getAttribute('data-key');
+        var shop = FR.Shop;
+
+        if (action === 'inv-equip-outfit') {
+            if (shop.cosmetics[key] && shop.cosmetics[key].owned) {
+                shop.activeOutfit = key;
+                W.applyOutfit(key);
+                shop.save();
+                renderInventory();
+            }
+        } else if (action === 'inv-equip-icon') {
+            if (shop.icons[key] && shop.icons[key].owned) {
+                shop.activeIcon = (shop.activeIcon === key) ? null : key;
+                shop.save();
+                renderInventory();
+            }
+        }
+    });
+
+    ui.shopInvBtn.addEventListener('click', function () { openInventory(); });
+    ui.invBack.addEventListener('click', function () { closeInventory(); });
 
     // ============================================================
     // ROTATING SHOP (6-hour refresh)
@@ -1700,6 +1794,21 @@
                 closeShop();
             }
             for (var ks in pressed) pressed[ks] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'inventory') {
+            if (pressed['Escape']) {
+                closeInventory();
+            }
+            for (var kinv in pressed) pressed[kinv] = false;
             FR.camera.position.set(
                 Math.sin(t * 0.3) * 2.5,
                 5.5 + Math.sin(t * 0.5) * 0.6,
