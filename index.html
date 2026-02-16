@@ -299,6 +299,11 @@
             justify-content: space-between;
             align-items: center;
         }
+        .shop-refresh-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .shop-refresh-timer {
             font-family: 'Inter', sans-serif;
             font-size: 12px;
@@ -306,6 +311,27 @@
             color: rgba(255,255,255,0.35);
             letter-spacing: 1px;
             text-transform: none;
+        }
+        .shop-refresh-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #ffd700;
+            color: #333;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 0.5px;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .shop-refresh-btn:hover { background: #ffe34d; }
+        .shop-refresh-btn:active { transform: scale(0.95); }
+        .shop-refresh-btn:disabled {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.3);
+            cursor: default;
         }
         .shop-grid {
             display: grid;
@@ -1305,7 +1331,10 @@
             <div class="shop-grid" id="shop-powerups"></div>
             <div class="shop-section-title shop-section-title-row">
                 <span>Featured Outfits</span>
-                <span class="shop-refresh-timer" id="shop-refresh-timer"></span>
+                <span class="shop-refresh-row">
+                    <span class="shop-refresh-timer" id="shop-refresh-timer"></span>
+                    <button class="shop-refresh-btn" id="shop-refresh-btn">&#x21bb; 100</button>
+                </span>
             </div>
             <div class="shop-grid" id="shop-cosmetics"></div>
             <div class="shop-section-title">Loot Crates</div>

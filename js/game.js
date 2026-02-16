@@ -29,6 +29,7 @@
         shopPU:     document.getElementById('shop-powerups'),
         shopCos:    document.getElementById('shop-cosmetics'),
         shopRefreshTimer: document.getElementById('shop-refresh-timer'),
+        shopRefreshBtn:  document.getElementById('shop-refresh-btn'),
         shopBack:       document.getElementById('shop-back'),
         shopInvBtn:     document.getElementById('shop-inventory-btn'),
         invScr:         document.getElementById('inventory-screen'),
@@ -669,7 +670,9 @@
     // ROTATING SHOP (6-hour refresh)
     // ============================================================
     var ROTATION_MS = 6 * 60 * 60 * 1000; // 6 hours
+    var REFRESH_COST = 100;
     var shopTimerInterval = null;
+    var manualRefreshCount = 0; // resets each natural rotation
 
     function seededRandom(seed) {
         // Simple deterministic PRNG (mulberry32)
@@ -689,7 +692,7 @@
             allKeys.push(k);
         }
 
-        var rotationIndex = Math.floor(Date.now() / ROTATION_MS);
+        var rotationIndex = Math.floor(Date.now() / ROTATION_MS) + manualRefreshCount;
         var rng = seededRandom(rotationIndex);
 
         // Shuffle using seeded RNG and pick first 4
@@ -730,13 +733,24 @@
         shopTimerInterval = setInterval(function () {
             var currentRotation = Math.floor(Date.now() / ROTATION_MS);
             if (currentRotation !== lastRotation) {
-                // Rotation changed — re-render shop
+                // Natural rotation changed — reset manual refreshes
                 lastRotation = currentRotation;
+                manualRefreshCount = 0;
                 renderShop();
             }
             updateRefreshTimer();
         }, 1000);
     }
+
+    // Manual refresh button
+    ui.shopRefreshBtn.addEventListener('click', function () {
+        var shop = FR.Shop;
+        if (shop.wallet < REFRESH_COST) return;
+        shop.wallet -= REFRESH_COST;
+        manualRefreshCount++;
+        shop.save();
+        renderShop();
+    });
 
     function stopShopTimer() {
         if (shopTimerInterval) {
@@ -795,6 +809,7 @@
         }
         ui.shopCos.innerHTML = cosHTML;
         updateRefreshTimer();
+        ui.shopRefreshBtn.disabled = shop.wallet < REFRESH_COST;
 
         // Loot Crates
         var icons = shop.icons;
