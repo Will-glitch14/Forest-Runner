@@ -1447,7 +1447,14 @@
             rank.textContent = (i + 1);
             row.appendChild(rank);
 
-            if (entry.photoURL) {
+            if (entry.activeIcon && FR.Shop.icons[entry.activeIcon]) {
+                var iconData = FR.Shop.icons[entry.activeIcon];
+                var iconAv = document.createElement('div');
+                iconAv.className = 'lb-icon-avatar';
+                iconAv.style.background = iconData.bg;
+                iconAv.textContent = iconData.icon;
+                row.appendChild(iconAv);
+            } else if (entry.photoURL) {
                 var avatar = document.createElement('img');
                 avatar.className = 'lb-avatar';
                 avatar.src = entry.photoURL;
