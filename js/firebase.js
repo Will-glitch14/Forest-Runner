@@ -450,6 +450,136 @@
     }
 
     // ============================================================
+    // MULTIPLAYER — MATCHMAKING & MATCH SYNC
+    // ============================================================
+    var matchUnsubscribe = null;
+    var queueUnsubscribe = null;
+
+    function joinQueue(callback) {
+        if (!available || !db || !currentUser) return;
+        var shop = FR.Shop;
+        var myData = {
+            uid: currentUser.uid,
+            username: username || currentUser.displayName || 'Player',
+            photoURL: currentUser.photoURL || '',
+            activeIcon: shop.activeIcon || null,
+            activeOutfit: shop.activeOutfit || 'explorer',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        var queueRef = db.collection('matchmaking').doc('queue');
+
+        db.runTransaction(function (transaction) {
+            return transaction.get(queueRef).then(function (doc) {
+                if (doc.exists && doc.data().uid && doc.data().uid !== currentUser.uid) {
+                    // Someone is waiting — create a match
+                    var opponent = doc.data();
+                    var matchRef = db.collection('matches').doc();
+                    var matchData = {
+                        player1: {
+                            uid: opponent.uid,
+                            username: opponent.username,
+                            icon: opponent.activeIcon || null,
+                            outfit: opponent.activeOutfit || 'explorer',
+                            photoURL: opponent.photoURL || '',
+                            score: 0,
+                            lives: 3,
+                            finished: false
+                        },
+                        player2: {
+                            uid: currentUser.uid,
+                            username: myData.username,
+                            icon: myData.activeIcon,
+                            outfit: myData.activeOutfit,
+                            photoURL: myData.photoURL,
+                            score: 0,
+                            lives: 3,
+                            finished: false
+                        },
+                        status: 'active',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    transaction.set(matchRef, matchData);
+                    // Clear queue
+                    transaction.delete(queueRef);
+                    return { matchId: matchRef.id, playerKey: 'player2', opponent: opponent };
+                } else {
+                    // No one waiting — add self to queue
+                    transaction.set(queueRef, myData);
+                    return { queued: true };
+                }
+            });
+        }).then(function (result) {
+            if (result.queued) {
+                // We're in queue — listen for match creation
+                queueUnsubscribe = db.collection('matches')
+                    .where('player1.uid', '==', currentUser.uid)
+                    .where('status', '==', 'active')
+                    .onSnapshot(function (snap) {
+                        snap.docChanges().forEach(function (change) {
+                            if (change.type === 'added') {
+                                var matchDoc = change.doc;
+                                if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
+                                callback({
+                                    matchId: matchDoc.id,
+                                    playerKey: 'player1',
+                                    opponent: matchDoc.data().player2
+                                });
+                            }
+                        });
+                    });
+            } else {
+                // We created the match
+                callback(result);
+            }
+        }).catch(function (err) {
+            console.warn('Matchmaking error:', err);
+        });
+    }
+
+    function leaveQueue() {
+        if (!available || !db || !currentUser) return;
+        if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
+        var queueRef = db.collection('matchmaking').doc('queue');
+        queueRef.get().then(function (doc) {
+            if (doc.exists && doc.data().uid === currentUser.uid) {
+                queueRef.delete().catch(function () {});
+            }
+        }).catch(function () {});
+    }
+
+    function listenToMatch(matchId, callback) {
+        if (!available || !db) return;
+        if (matchUnsubscribe) { matchUnsubscribe(); }
+        matchUnsubscribe = db.collection('matches').doc(matchId).onSnapshot(function (doc) {
+            if (doc.exists) {
+                callback(doc.data());
+            }
+        });
+    }
+
+    function updateMatchState(matchId, playerKey, data) {
+        if (!available || !db || !matchId) return;
+        var update = {};
+        for (var k in data) {
+            update[playerKey + '.' + k] = data[k];
+        }
+        db.collection('matches').doc(matchId).update(update).catch(function (err) {
+            console.warn('Match update error:', err);
+        });
+    }
+
+    function finishMatch(matchId) {
+        if (!available || !db || !matchId) return;
+        db.collection('matches').doc(matchId).update({ status: 'finished' }).catch(function () {});
+    }
+
+    function cleanupMatch() {
+        if (matchUnsubscribe) { matchUnsubscribe(); matchUnsubscribe = null; }
+        if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
+    }
+
+    // ============================================================
     // PUBLIC API
     // ============================================================
     FR.Fire = {
@@ -465,6 +595,13 @@
         fetchLeaderboard: fetchLeaderboard,
         fetchCoinLeaderboard: fetchCoinLeaderboard,
         updateAuthUI: updateAuthUI,
-        onNeedUsername: null  // set by game.js to open username modal
+        onNeedUsername: null,  // set by game.js to open username modal
+        // Multiplayer
+        joinQueue: joinQueue,
+        leaveQueue: leaveQueue,
+        listenToMatch: listenToMatch,
+        updateMatchState: updateMatchState,
+        finishMatch: finishMatch,
+        cleanupMatch: cleanupMatch
     };
 })();

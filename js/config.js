@@ -31,7 +31,7 @@ FR.C = {
 
 // ---- Mutable Game State ----
 FR.S = {
-    mode:       'loading',   // loading, start, playing, dying, gameover, shop, settings, leaderboard, username
+    mode:       'loading',   // loading, start, playing, dying, gameover, shop, settings, leaderboard, username, mp-queue, mp-playing, mp-dying, mp-gameover, mp-result
     score:      0,
     coins:      0,
     speed:      13,
@@ -59,6 +59,21 @@ FR.S = {
     shieldActive: false,
     magnetActive: false,
     doubleCoins:  false,
+    // Multiplayer state
+    mpLives: 0,
+    mpMaxLives: 3,
+    mpMatchId: null,
+    mpOpponentScore: 0,
+    mpOpponentLives: 3,
+    mpOpponentFinished: false,
+    mpOpponentName: '',
+    mpOpponentIcon: null,
+    mpIsFinished: false,
+    mpSyncTimer: 0,
+    mpInvincible: false,
+    mpInvincibleTimer: 0,
+    mpCountdown: 0,
+    mpPlayerKey: null,
 };
 
 // Load persisted high scores

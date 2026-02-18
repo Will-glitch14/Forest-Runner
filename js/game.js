@@ -70,6 +70,27 @@
         lbTabScore: document.getElementById('lb-tab-score'),
         lbTabCoins: document.getElementById('lb-tab-coins'),
         lbHeaderValue: document.getElementById('lb-header-value'),
+        // Multiplayer
+        mpQueueScr:    document.getElementById('mp-queue-screen'),
+        mpQueueCancel: document.getElementById('mp-queue-cancel'),
+        mpHud:         document.getElementById('mp-hud'),
+        mpHudIcon:     document.getElementById('mp-hud-icon'),
+        mpHudName:     document.getElementById('mp-hud-name'),
+        mpHudScore:    document.getElementById('mp-hud-score'),
+        mpHudLives:    document.getElementById('mp-hud-lives'),
+        mpPlayerLives: document.getElementById('mp-player-lives'),
+        mpCountdown:   document.getElementById('mp-countdown'),
+        mpCountdownNum:document.getElementById('mp-countdown-num'),
+        mpResultScr:   document.getElementById('mp-result-screen'),
+        mpResultTitle: document.getElementById('mp-result-title'),
+        mpResultMyScore: document.getElementById('mp-result-my-score'),
+        mpResultOppName: document.getElementById('mp-result-opp-name'),
+        mpResultOppScore:document.getElementById('mp-result-opp-score'),
+        mpResultCoins:  document.getElementById('mp-result-coins'),
+        mpResultBonus:  document.getElementById('mp-result-bonus'),
+        mpResultAgain:  document.getElementById('mp-result-again'),
+        mpResultHome:   document.getElementById('mp-result-home'),
+        startMpBtn:     document.getElementById('start-mp-btn'),
         // Crate system
         shopCrates:   document.getElementById('shop-crates'),
         crateReveal:  document.getElementById('crate-reveal'),
@@ -216,7 +237,7 @@
     var cheatBuffer = '';
     var cheatCode = 'ADD500K';
     document.addEventListener('keydown', function (e) {
-        if (S.mode !== 'playing') { cheatBuffer = ''; return; }
+        if (S.mode !== 'playing' || S.mpMatchId) { cheatBuffer = ''; return; }
         var ch = e.key.toUpperCase();
         if (ch.length === 1) {
             cheatBuffer += ch;
@@ -266,7 +287,8 @@
     }, { passive: false });
 
     document.addEventListener('touchmove', function (e) {
-        if (S.mode === 'playing' || S.mode === 'dying' || S.mode === 'start' || S.mode === 'gameover') {
+        if (S.mode === 'playing' || S.mode === 'dying' || S.mode === 'start' || S.mode === 'gameover' ||
+            S.mode === 'mp-playing' || S.mode === 'mp-dying') {
             e.preventDefault();
         }
     }, { passive: false });
@@ -1510,19 +1532,22 @@
     });
 
     function goHome() {
+        // Clean up multiplayer
+        if (FR.Fire) FR.Fire.cleanupMatch();
+        S.mpMatchId = null;
+        S.mpPlayerKey = null;
+        S.mpInvincible = false;
+        ui.mpHud.classList.add('hidden');
+        ui.mpPlayerLives.classList.add('hidden');
+        ui.mpResultScr.classList.add('hidden');
+        ui.mpQueueScr.classList.add('hidden');
+        ui.mpCountdown.classList.add('hidden');
+
+        // Ensure player visible (in case invincibility flash left it hidden)
+        FR.player.group.traverse(function (c) { if (c.isMesh) c.visible = true; });
+
         // Clear world objects
-        var i;
-        for (i = FR.obsList.length - 1; i >= 0; i--) { FR.scene.remove(FR.obsList[i].mesh); }
-        for (i = FR.coinList.length - 1; i >= 0; i--) { if (!FR.coinList[i].collected) FR.scene.remove(FR.coinList[i].mesh); }
-        for (i = FR.particles.length - 1; i >= 0; i--) { FR.scene.remove(FR.particles[i].mesh); FR.particles[i].mesh.material.dispose(); }
-        for (i = FR.segments.length - 1; i >= 0; i--) {
-            FR.scene.remove(FR.segments[i]);
-            FR.segments[i].traverse(function (c) { if (c.geometry) c.geometry.dispose(); });
-        }
-        FR.obsList.length = 0;
-        FR.coinList.length = 0;
-        FR.particles.length = 0;
-        FR.segments.length = 0;
+        clearWorld();
 
         // Reset state
         S.score = 0; S.coins = 0; S.speed = C.INIT_SPEED;
@@ -1549,6 +1574,308 @@
 
         S.mode = 'start';
     }
+
+    // ============================================================
+    // MULTIPLAYER SYSTEM
+    // ============================================================
+    function openMPQueue() {
+        if (!FR.Fire || !FR.Fire.isSignedIn()) {
+            FR.Fire.signIn();
+            return;
+        }
+        S.mode = 'mp-queue';
+        ui.startScr.classList.add('hidden');
+        ui.mpQueueScr.classList.remove('hidden');
+
+        FR.Fire.joinQueue(function (result) {
+            if (result && result.matchId) {
+                onMatchFound(result);
+            }
+        });
+    }
+
+    function cancelMPQueue() {
+        if (FR.Fire) FR.Fire.leaveQueue();
+        ui.mpQueueScr.classList.add('hidden');
+        ui.startScr.classList.remove('hidden');
+        S.mode = 'start';
+    }
+
+    function onMatchFound(result) {
+        S.mpMatchId = result.matchId;
+        S.mpPlayerKey = result.playerKey;
+        var opp = result.opponent;
+        S.mpOpponentName = opp.username || 'Player';
+        S.mpOpponentIcon = opp.icon || null;
+        S.mpOpponentScore = 0;
+        S.mpOpponentLives = 3;
+        S.mpOpponentFinished = false;
+        S.mpIsFinished = false;
+
+        // Setup opponent HUD
+        if (S.mpOpponentIcon && FR.Shop.icons[S.mpOpponentIcon]) {
+            var iconData = FR.Shop.icons[S.mpOpponentIcon];
+            ui.mpHudIcon.textContent = iconData.icon;
+            ui.mpHudIcon.style.background = iconData.bg;
+        } else {
+            ui.mpHudIcon.textContent = S.mpOpponentName.charAt(0).toUpperCase();
+            ui.mpHudIcon.style.background = 'rgba(255,255,255,0.15)';
+        }
+        ui.mpHudName.textContent = S.mpOpponentName;
+
+        // Listen for match updates
+        FR.Fire.listenToMatch(S.mpMatchId, function (data) {
+            var oppKey = S.mpPlayerKey === 'player1' ? 'player2' : 'player1';
+            if (data[oppKey]) {
+                S.mpOpponentScore = data[oppKey].score || 0;
+                S.mpOpponentLives = data[oppKey].lives;
+                if (S.mpOpponentLives === undefined) S.mpOpponentLives = 3;
+                S.mpOpponentFinished = data[oppKey].finished || false;
+            }
+            // Check if both finished
+            if (S.mpIsFinished && S.mpOpponentFinished && S.mode !== 'mp-result') {
+                showMPResult();
+            }
+        });
+
+        // Start countdown
+        startMPCountdown();
+    }
+
+    function startMPCountdown() {
+        ui.mpQueueScr.classList.add('hidden');
+        S.mpCountdown = 3;
+        S.mode = 'mp-countdown';
+        ui.mpCountdown.classList.remove('hidden');
+        ui.mpCountdownNum.textContent = '3';
+
+        var count = 3;
+        var countInterval = setInterval(function () {
+            count--;
+            if (count > 0) {
+                ui.mpCountdownNum.textContent = String(count);
+                // Re-trigger animation
+                ui.mpCountdownNum.style.animation = 'none';
+                ui.mpCountdownNum.offsetHeight; // force reflow
+                ui.mpCountdownNum.style.animation = '';
+            } else if (count === 0) {
+                ui.mpCountdownNum.textContent = 'GO!';
+                ui.mpCountdownNum.style.animation = 'none';
+                ui.mpCountdownNum.offsetHeight;
+                ui.mpCountdownNum.style.animation = '';
+            } else {
+                clearInterval(countInterval);
+                ui.mpCountdown.classList.add('hidden');
+                startMultiplayerGame();
+            }
+        }, 1000);
+    }
+
+    function startMultiplayerGame() {
+        A.init();
+        A.setVolume(FR.Settings.volume);
+
+        // Reset game state (no powerups in MP)
+        S.score = 0; S.coins = 0; S.speed = C.INIT_SPEED;
+        S.pZ = 0; S.pX = 0; S.pY = 0; S.pLane = 1;
+        S.vY = 0; S.jumping = false; S.sliding = false; S.slideTmr = 0;
+        S.slideBlend = 0;
+        S.runPh = 0; S.gTime = 0; S.lastObsZ = 22; S.lastCoinZ = 12;
+        S.shakeAmt = 0; S.flashAlpha = 0; S.deathTimer = 0;
+        S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
+        S.mpLives = S.mpMaxLives;
+        S.mpIsFinished = false;
+        S.mpSyncTimer = 0;
+        S.mpInvincible = false;
+        S.mpInvincibleTimer = 0;
+
+        W.removeShield();
+
+        // Clear and rebuild world
+        clearWorld();
+        W.initSegments();
+        spawnObstacles();
+        spawnCoinGroups();
+
+        // Show MP HUD
+        updateMPHud();
+        ui.mpHud.classList.remove('hidden');
+        updateMPPlayerLives();
+        ui.mpPlayerLives.classList.remove('hidden');
+        ui.hud.classList.add('visible');
+
+        S.mode = 'mp-playing';
+    }
+
+    function clearWorld() {
+        var i;
+        for (i = FR.obsList.length - 1; i >= 0; i--) { FR.scene.remove(FR.obsList[i].mesh); }
+        for (i = FR.coinList.length - 1; i >= 0; i--) { if (!FR.coinList[i].collected) FR.scene.remove(FR.coinList[i].mesh); }
+        for (i = FR.particles.length - 1; i >= 0; i--) { FR.scene.remove(FR.particles[i].mesh); FR.particles[i].mesh.material.dispose(); }
+        for (i = FR.segments.length - 1; i >= 0; i--) {
+            FR.scene.remove(FR.segments[i]);
+            FR.segments[i].traverse(function (c) { if (c.geometry) c.geometry.dispose(); });
+        }
+        FR.obsList.length = 0;
+        FR.coinList.length = 0;
+        FR.particles.length = 0;
+        FR.segments.length = 0;
+    }
+
+    function updateMPHud() {
+        ui.mpHudScore.textContent = Math.floor(S.mpOpponentScore);
+        var livesHTML = '';
+        for (var i = 0; i < S.mpMaxLives; i++) {
+            livesHTML += '<span class="mp-heart' + (i < S.mpOpponentLives ? '' : ' lost') + '">\u2764\uFE0F</span>';
+        }
+        ui.mpHudLives.innerHTML = livesHTML;
+    }
+
+    function updateMPPlayerLives() {
+        var html = '';
+        for (var i = 0; i < S.mpMaxLives; i++) {
+            html += '<span class="mp-heart' + (i < S.mpLives ? '' : ' lost') + '">\u2764\uFE0F</span>';
+        }
+        ui.mpPlayerLives.innerHTML = html;
+    }
+
+    function triggerMPDeath() {
+        S.mpLives--;
+        A.play('hit');
+        E.triggerShake(1.2);
+        E.triggerFlash('#ff2200', 0.25);
+        E.spawnDeathBurst(FR.player.group.position.clone());
+        updateMPPlayerLives();
+
+        // Sync to Firestore
+        if (FR.Fire && S.mpMatchId) {
+            FR.Fire.updateMatchState(S.mpMatchId, S.mpPlayerKey, {
+                score: Math.floor(S.score),
+                lives: S.mpLives,
+                finished: S.mpLives <= 0
+            });
+        }
+
+        if (S.mpLives <= 0) {
+            // Player is out
+            S.mpIsFinished = true;
+            S.mode = 'mp-gameover';
+            // Wait for opponent
+            if (S.mpOpponentFinished) {
+                showMPResult();
+            }
+            return;
+        }
+
+        // Respawn: brief slow-mo then continue
+        S.mode = 'mp-dying';
+        S.deathTimer = 0.3;
+    }
+
+    function mpRespawn() {
+        // Reset position to center lane, on ground, at current Z
+        S.pLane = 1;
+        S.pX = C.LANES[1];
+        S.pY = 0;
+        S.vY = 0;
+        S.jumping = false;
+        S.sliding = false;
+        S.slideTmr = 0;
+        S.speed = C.INIT_SPEED;
+        S.mpInvincible = true;
+        S.mpInvincibleTimer = 2.0;
+
+        FR.player.group.position.set(S.pX, 0, S.pZ);
+
+        S.mode = 'mp-playing';
+    }
+
+    function syncMPScore(dt) {
+        S.mpSyncTimer += dt;
+        if (S.mpSyncTimer >= 1.0) {
+            S.mpSyncTimer = 0;
+            if (FR.Fire && S.mpMatchId) {
+                FR.Fire.updateMatchState(S.mpMatchId, S.mpPlayerKey, {
+                    score: Math.floor(S.score),
+                    lives: S.mpLives,
+                    finished: false
+                });
+            }
+        }
+    }
+
+    function showMPResult() {
+        S.mode = 'mp-result';
+        var myScore = Math.floor(S.score);
+        var oppScore = Math.floor(S.mpOpponentScore);
+        var bonus = 0;
+        var resultText = '';
+
+        if (myScore > oppScore) {
+            resultText = 'YOU WIN!';
+            ui.mpResultTitle.className = 'mp-win';
+            bonus = 1000;
+        } else if (myScore < oppScore) {
+            resultText = 'YOU LOSE';
+            ui.mpResultTitle.className = 'mp-lose';
+            bonus = 0;
+        } else {
+            resultText = 'TIE!';
+            ui.mpResultTitle.className = 'mp-tie';
+            bonus = 500;
+        }
+
+        ui.mpResultTitle.textContent = resultText;
+        ui.mpResultMyScore.textContent = myScore;
+        ui.mpResultOppName.textContent = S.mpOpponentName;
+        ui.mpResultOppScore.textContent = oppScore;
+
+        // Add coins to wallet
+        FR.Shop.wallet += S.coins + bonus;
+        S.totalCoins += S.coins;
+        try { localStorage.setItem('fr_tc', String(S.totalCoins)); } catch (e) {}
+        FR.Shop.save();
+
+        ui.mpResultCoins.textContent = 'Coins earned: ' + S.coins;
+        if (bonus > 0) {
+            ui.mpResultBonus.textContent = '+ ' + bonus + ' winner bonus!';
+        } else {
+            ui.mpResultBonus.textContent = '';
+        }
+
+        // Update high score
+        if (myScore > S.highScore) {
+            S.highScore = myScore;
+            try { localStorage.setItem('fr_hs', String(S.highScore)); } catch (e) {}
+        }
+
+        if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
+        if (FR.Fire) FR.Fire.finishMatch(S.mpMatchId);
+
+        ui.hud.classList.remove('visible');
+        ui.mpHud.classList.add('hidden');
+        ui.mpPlayerLives.classList.add('hidden');
+        ui.mpResultScr.classList.remove('hidden');
+    }
+
+    function closeMPResult() {
+        ui.mpResultScr.classList.add('hidden');
+        if (FR.Fire) FR.Fire.cleanupMatch();
+        S.mpMatchId = null;
+        S.mpPlayerKey = null;
+    }
+
+    // MP button handlers
+    ui.startMpBtn.addEventListener('click', function () { openMPQueue(); });
+    ui.mpQueueCancel.addEventListener('click', function () { cancelMPQueue(); });
+    ui.mpResultHome.addEventListener('click', function () {
+        closeMPResult();
+        goHome();
+    });
+    ui.mpResultAgain.addEventListener('click', function () {
+        closeMPResult();
+        openMPQueue();
+    });
 
     // ============================================================
     // POWER-UP ACTIVATION
@@ -1794,6 +2121,124 @@
     }
 
     // ============================================================
+    // MULTIPLAYER UPDATE (like update but with MP death/respawn)
+    // ============================================================
+    function mpUpdate(dt) {
+        // Invincibility timer
+        if (S.mpInvincible) {
+            S.mpInvincibleTimer -= dt;
+            if (S.mpInvincibleTimer <= 0) {
+                S.mpInvincible = false;
+                // Stop flashing
+                FR.player.group.traverse(function (c) {
+                    if (c.isMesh) c.visible = true;
+                });
+            } else {
+                // Flash player model
+                var flash = Math.floor(S.mpInvincibleTimer * 10) % 2 === 0;
+                FR.player.group.traverse(function (c) {
+                    if (c.isMesh) c.visible = flash;
+                });
+            }
+        }
+
+        // Speed ramp
+        S.speed = Math.min(C.MAX_SPEED, S.speed + C.SPEED_ACCEL * dt);
+
+        // Move forward
+        S.pZ += S.speed * dt;
+        S.score += S.speed * dt * 2;
+
+        // Lane switching
+        var targetX = C.LANES[S.pLane];
+        var dx = targetX - S.pX;
+        if (Math.abs(dx) > 0.04) {
+            S.pX += Math.sign(dx) * Math.min(Math.abs(dx), C.LANE_LERP * dt);
+        } else {
+            S.pX = targetX;
+        }
+
+        // Jump physics
+        if (S.jumping) {
+            S.vY -= C.GRAVITY * dt;
+            S.pY += S.vY * dt;
+            if (S.pY <= 0) {
+                S.pY = 0; S.vY = 0; S.jumping = false;
+                A.play('land');
+                var landPos = new THREE.Vector3(S.pX, 0.08, S.pZ);
+                E.spawnBurst(landPos, 0x8a7a5a, 12, 3, 2);
+                E.spawnLandingRing(landPos);
+            }
+        }
+
+        // Slide timer
+        if (S.sliding) {
+            S.slideTmr -= dt;
+            if (S.slideTmr <= 0) S.sliding = false;
+        }
+
+        // Player position
+        FR.player.group.position.set(S.pX, S.pY - S.slideBlend * 0.45, S.pZ);
+        W.animatePlayer(dt);
+
+        // Camera
+        updateCamera(dt);
+
+        // Audio
+        A.updateSteps(dt, S.speed, !S.jumping && !S.sliding);
+        A.updateAmbient(S.speed);
+
+        // Coins
+        var coinGlow = 0.6 + Math.sin(S.gTime * 4) * 0.25;
+        FR.mat.coin.emissiveIntensity = coinGlow;
+        for (var i = 0; i < FR.coinList.length; i++) {
+            var c = FR.coinList[i];
+            if (!c.collected) {
+                c.mesh.rotation.y += 3.5 * dt;
+                var baseY = c.arcY || C.COIN_Y;
+                c.mesh.position.y = baseY + Math.sin(S.gTime * 3 + c.z * 0.5) * 0.12;
+            }
+        }
+
+        // Spawning
+        spawnObstacles();
+        spawnCoinGroups();
+        W.recycleSegments();
+        cleanupObjects();
+
+        // Collisions
+        checkCoinCollect();
+        if (!S.mpInvincible) {
+            var hitObs = checkCollisions();
+            if (hitObs) {
+                triggerMPDeath();
+                return;
+            }
+        }
+
+        // Effects
+        E.updateParticles(dt);
+        E.updateLeaves(dt, S.pZ, S.gTime);
+        E.updateFireflies(dt, S.pZ, S.gTime, nightAmount);
+        E.updateClouds(dt, S.pZ, S.gTime, nightAmount);
+        E.updateStars(dt, S.pZ, S.gTime, nightAmount);
+        E.updateSpeedLines(dt, S.speed, S.pZ);
+        E.updateLandingRings(dt);
+        E.updateShake(dt);
+
+        // Environment
+        updateEnvironment(dt);
+
+        // HUD
+        updateHUD();
+        updateMPHud();
+        updateMPPlayerLives();
+
+        // Sync score to Firestore periodically
+        syncMPScore(dt);
+    }
+
+    // ============================================================
     // MAIN LOOP
     // ============================================================
     function loop(time) {
@@ -1898,6 +2343,48 @@
             E.updateFireflies(dt, 0, S.gTime, nightAmount);
             E.updateClouds(dt, 0, S.gTime, nightAmount);
             E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'mp-queue' || S.mode === 'mp-countdown') {
+            if (pressed['Escape'] && S.mode === 'mp-queue') {
+                cancelMPQueue();
+            }
+            for (var kmpq in pressed) pressed[kmpq] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'mp-playing') {
+            processInput();
+            mpUpdate(dt);
+
+        } else if (S.mode === 'mp-dying') {
+            S.deathTimer -= dt;
+            var mpSlowDt = dt * 0.15;
+            S.pZ += S.speed * mpSlowDt * 0.3;
+            FR.player.group.position.z = S.pZ;
+            updateCamera(mpSlowDt);
+            E.updateParticles(mpSlowDt);
+            E.updateShake(dt);
+            updateEnvironment(mpSlowDt);
+            if (S.deathTimer <= 0) mpRespawn();
+
+        } else if (S.mode === 'mp-gameover') {
+            // Waiting for opponent to finish
+            for (var kmpgo in pressed) pressed[kmpgo] = false;
+            E.updateParticles(dt);
+            FR.camera.position.y += 0.1 * dt;
+            // Opponent HUD still updates via listener
+            updateMPHud();
+
+        } else if (S.mode === 'mp-result') {
+            for (var kmpr in pressed) pressed[kmpr] = false;
+            E.updateParticles(dt);
 
         } else if (S.mode === 'playing') {
             processInput();

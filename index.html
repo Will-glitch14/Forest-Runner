@@ -1243,6 +1243,192 @@
             border-color: rgba(255,255,255,0.12);
             background: rgba(255,255,255,0.07);
         }
+
+        /* ---- Multiplayer Queue Screen ---- */
+        #mp-queue-screen {
+            background: radial-gradient(ellipse at 50% 45%, rgba(10,30,60,0.94), rgba(4,12,28,0.98));
+        }
+        #mp-queue-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 48px;
+            color: #4aa8ff;
+            text-shadow: 0 0 30px rgba(74,168,255,0.3);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+        }
+        .mp-queue-text {
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            animation: pulse 2s ease-in-out infinite;
+            margin-bottom: 30px;
+        }
+        .mp-queue-dots::after {
+            content: '';
+            animation: mpDots 1.5s steps(4, end) infinite;
+        }
+        @keyframes mpDots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        /* ---- Multiplayer HUD ---- */
+        .mp-hud {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 8px 18px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .mp-hud.hidden { display: none; }
+        .mp-hud-icon {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
+        .mp-hud-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .mp-hud-sep {
+            width: 1px;
+            height: 24px;
+            background: rgba(255,255,255,0.2);
+        }
+        .mp-hud-score {
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: #ffd700;
+        }
+        .mp-hud-lives {
+            display: flex;
+            gap: 3px;
+            font-size: 16px;
+        }
+        .mp-heart { opacity: 1; transition: opacity 0.3s; }
+        .mp-heart.lost { opacity: 0.2; }
+
+        /* Player lives in MP */
+        .mp-player-lives {
+            position: absolute;
+            top: 58px;
+            left: 28px;
+            display: flex;
+            gap: 4px;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        .mp-player-lives.hidden { display: none; }
+
+        /* ---- MP Countdown ---- */
+        .mp-countdown {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            pointer-events: none;
+        }
+        .mp-countdown.hidden { display: none; }
+        .mp-countdown-num {
+            font-family: 'Russo One', sans-serif;
+            font-size: 120px;
+            color: #fff;
+            text-shadow: 0 0 40px rgba(74,168,255,0.5), 0 4px 20px rgba(0,0,0,0.5);
+            animation: mpCountPop 0.8s ease-out;
+        }
+        @keyframes mpCountPop {
+            0% { transform: scale(2); opacity: 0; }
+            30% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        /* ---- MP Result Screen ---- */
+        #mp-result-screen {
+            background: radial-gradient(ellipse at 50% 45%, rgba(10,30,60,0.94), rgba(4,12,28,0.98));
+        }
+        #mp-result-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 58px;
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+        }
+        #mp-result-screen h1.mp-win {
+            color: #5cb85c;
+            text-shadow: 0 0 30px rgba(92,184,92,0.35);
+        }
+        #mp-result-screen h1.mp-lose {
+            color: #e74c3c;
+            text-shadow: 0 0 30px rgba(200,50,50,0.35);
+        }
+        #mp-result-screen h1.mp-tie {
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255,215,0,0.35);
+        }
+        .mp-result-scores {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+        .mp-result-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+        }
+        .mp-result-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+        }
+        .mp-result-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+        }
+        .mp-result-score {
+            font-family: 'Russo One', sans-serif;
+            font-size: 32px;
+            color: #ffd700;
+        }
+        .mp-result-coins {
+            font-size: 18px;
+            color: #ffd700;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        .mp-result-bonus {
+            font-size: 14px;
+            color: #5cb85c;
+            font-weight: 700;
+        }
+
+        /* MP invincibility flash */
+        @keyframes mpInvFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
@@ -1286,6 +1472,7 @@
             </div>
             <div class="prompt">Press SPACE or Tap to Run</div>
             <div class="screen-btns">
+                <button class="screen-btn" id="start-mp-btn" style="background:rgba(74,168,255,0.15);border-color:rgba(74,168,255,0.4);color:#4aa8ff;">1v1</button>
                 <button class="screen-btn" id="start-shop-btn">Shop</button>
                 <button class="screen-btn" id="start-inv-btn">Inventory</button>
                 <button class="screen-btn" id="start-lb-btn">Leaderboard</button>
@@ -1434,6 +1621,53 @@
             <div class="lb-empty" id="lb-empty" style="display:none;">No scores yet. Be the first!</div>
             <div class="lb-signin-hint" id="lb-signin-hint" style="display:none;">Sign in to submit your score</div>
             <button class="shop-back-btn" id="lb-back">Back</button>
+        </div>
+
+        <!-- Multiplayer Queue Screen -->
+        <div id="mp-queue-screen" class="screen hidden">
+            <h1>MULTIPLAYER</h1>
+            <div class="mp-queue-text">Searching for opponent<span class="mp-queue-dots"></span></div>
+            <button class="screen-btn" id="mp-queue-cancel">Cancel</button>
+        </div>
+
+        <!-- Multiplayer HUD (opponent info) -->
+        <div class="mp-hud hidden" id="mp-hud">
+            <div class="mp-hud-icon" id="mp-hud-icon"></div>
+            <span class="mp-hud-name" id="mp-hud-name">Opponent</span>
+            <div class="mp-hud-sep"></div>
+            <span class="mp-hud-score" id="mp-hud-score">0</span>
+            <div class="mp-hud-sep"></div>
+            <div class="mp-hud-lives" id="mp-hud-lives"></div>
+        </div>
+
+        <!-- Player lives in MP -->
+        <div class="mp-player-lives hidden" id="mp-player-lives"></div>
+
+        <!-- MP Countdown -->
+        <div class="mp-countdown hidden" id="mp-countdown">
+            <div class="mp-countdown-num" id="mp-countdown-num">3</div>
+        </div>
+
+        <!-- Multiplayer Result Screen -->
+        <div id="mp-result-screen" class="screen hidden">
+            <h1 id="mp-result-title">YOU WIN!</h1>
+            <div class="mp-result-scores">
+                <div class="mp-result-player">
+                    <div class="mp-result-label">You</div>
+                    <div class="mp-result-score" id="mp-result-my-score">0</div>
+                </div>
+                <div class="mp-result-player">
+                    <div class="mp-result-label">Opponent</div>
+                    <div class="mp-result-name" id="mp-result-opp-name">Player</div>
+                    <div class="mp-result-score" id="mp-result-opp-score">0</div>
+                </div>
+            </div>
+            <div class="mp-result-coins" id="mp-result-coins"></div>
+            <div class="mp-result-bonus" id="mp-result-bonus"></div>
+            <div class="screen-btns" style="margin-top:24px;">
+                <button class="screen-btn" id="mp-result-again" style="background:rgba(74,168,255,0.15);border-color:rgba(74,168,255,0.4);color:#4aa8ff;">Play Again</button>
+                <button class="screen-btn" id="mp-result-home">Home</button>
+            </div>
         </div>
 
         <!-- Crate Reveal Modal -->
