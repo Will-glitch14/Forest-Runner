@@ -468,6 +468,10 @@
         };
 
         var queueRef = db.collection('matchmaking').doc('queue');
+        var notifyRef = db.collection('matchmaking').doc('notify_' + currentUser.uid);
+
+        // Clean up any stale notification for this user
+        notifyRef.delete().catch(function () {});
 
         db.runTransaction(function (transaction) {
             return transaction.get(queueRef).then(function (doc) {
@@ -475,6 +479,7 @@
                     // Someone is waiting — create a match
                     var opponent = doc.data();
                     var matchRef = db.collection('matches').doc();
+                    var matchId = matchRef.id;
                     var matchData = {
                         player1: {
                             uid: opponent.uid,
@@ -500,9 +505,21 @@
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     transaction.set(matchRef, matchData);
+                    // Notify player1 via their personal notification doc
+                    var p1NotifyRef = db.collection('matchmaking').doc('notify_' + opponent.uid);
+                    transaction.set(p1NotifyRef, {
+                        matchId: matchId,
+                        opponent: {
+                            uid: currentUser.uid,
+                            username: myData.username,
+                            activeIcon: myData.activeIcon,
+                            activeOutfit: myData.activeOutfit,
+                            photoURL: myData.photoURL
+                        }
+                    });
                     // Clear queue
                     transaction.delete(queueRef);
-                    return { matchId: matchRef.id, playerKey: 'player2', opponent: opponent };
+                    return { matchId: matchId, playerKey: 'player2', opponent: opponent };
                 } else {
                     // No one waiting — add self to queue
                     transaction.set(queueRef, myData);
@@ -511,25 +528,22 @@
             });
         }).then(function (result) {
             if (result.queued) {
-                // We're in queue — listen for match creation
-                queueUnsubscribe = db.collection('matches')
-                    .where('player1.uid', '==', currentUser.uid)
-                    .where('status', '==', 'active')
-                    .onSnapshot(function (snap) {
-                        snap.docChanges().forEach(function (change) {
-                            if (change.type === 'added') {
-                                var matchDoc = change.doc;
-                                if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
-                                callback({
-                                    matchId: matchDoc.id,
-                                    playerKey: 'player1',
-                                    opponent: matchDoc.data().player2
-                                });
-                            }
+                // We're in queue — listen to our personal notification doc
+                queueUnsubscribe = notifyRef.onSnapshot(function (doc) {
+                    if (doc.exists && doc.data().matchId) {
+                        var data = doc.data();
+                        if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
+                        // Clean up notification doc
+                        notifyRef.delete().catch(function () {});
+                        callback({
+                            matchId: data.matchId,
+                            playerKey: 'player1',
+                            opponent: data.opponent
                         });
-                    });
+                    }
+                });
             } else {
-                // We created the match
+                // We created the match — callback fires directly
                 callback(result);
             }
         }).catch(function (err) {
@@ -540,12 +554,15 @@
     function leaveQueue() {
         if (!available || !db || !currentUser) return;
         if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
+        // Remove from queue if we're the one waiting
         var queueRef = db.collection('matchmaking').doc('queue');
         queueRef.get().then(function (doc) {
             if (doc.exists && doc.data().uid === currentUser.uid) {
                 queueRef.delete().catch(function () {});
             }
         }).catch(function () {});
+        // Clean up notification doc
+        db.collection('matchmaking').doc('notify_' + currentUser.uid).delete().catch(function () {});
     }
 
     function listenToMatch(matchId, callback) {
