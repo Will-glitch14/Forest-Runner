@@ -272,7 +272,7 @@ FR.Quests = {
 };
 
 FR.Quests.POOL = [
-    { type: 'score',    desc: 'Score {t} in a single run',      targets: [500, 1000, 2500],  coins: [75, 125, 200],  xp: [25, 50, 75] },
+    { type: 'score',    desc: 'Score {t} in a single run',      targets: [50000, 100000, 250000],  coins: [75, 125, 200],  xp: [25, 50, 75] },
     { type: 'coins',    desc: 'Collect {t} coins in a single run', targets: [10, 25, 50],    coins: [50, 100, 150],  xp: [25, 35, 50] },
     { type: 'jumps',    desc: 'Jump {t} times in a single run',  targets: [15, 30, 50],      coins: [50, 75, 100],   xp: [25, 35, 50] },
     { type: 'slides',   desc: 'Slide {t} times in a single run', targets: [10, 20, 35],      coins: [50, 75, 100],   xp: [25, 35, 50] },
