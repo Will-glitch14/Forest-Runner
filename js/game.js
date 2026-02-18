@@ -290,7 +290,11 @@
         var absDy = Math.abs(dy);
 
         if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) {
-            // Short tap — no significant swipe
+            // Short tap — but ignore if it landed on a button/link
+            var tgt = e.target;
+            if (tgt && (tgt.tagName === 'BUTTON' || tgt.closest('button') || tgt.closest('.screen-btn') || tgt.closest('.auth-signin-btn'))) {
+                return;
+            }
             tapped = true;
             return;
         }
