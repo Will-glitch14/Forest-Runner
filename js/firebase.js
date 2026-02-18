@@ -468,15 +468,11 @@
         };
 
         var queueRef = db.collection('matchmaking').doc('queue');
-        var notifyRef = db.collection('matchmaking').doc('notify_' + currentUser.uid);
-
-        // Clean up any stale notification for this user
-        notifyRef.delete().catch(function () {});
 
         db.runTransaction(function (transaction) {
             return transaction.get(queueRef).then(function (doc) {
                 if (doc.exists && doc.data().uid && doc.data().uid !== currentUser.uid) {
-                    // Someone is waiting — create a match
+                    // Someone is waiting — create match and notify via queue doc
                     var opponent = doc.data();
                     var matchRef = db.collection('matches').doc();
                     var matchId = matchRef.id;
@@ -505,9 +501,9 @@
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     transaction.set(matchRef, matchData);
-                    // Notify player1 via their personal notification doc
-                    var p1NotifyRef = db.collection('matchmaking').doc('notify_' + opponent.uid);
-                    transaction.set(p1NotifyRef, {
+                    // Notify player1 by updating the queue doc they're watching
+                    transaction.update(queueRef, {
+                        matched: true,
                         matchId: matchId,
                         opponent: {
                             uid: currentUser.uid,
@@ -517,8 +513,6 @@
                             photoURL: myData.photoURL
                         }
                     });
-                    // Clear queue
-                    transaction.delete(queueRef);
                     return { matchId: matchId, playerKey: 'player2', opponent: opponent };
                 } else {
                     // No one waiting — add self to queue
@@ -528,13 +522,13 @@
             });
         }).then(function (result) {
             if (result.queued) {
-                // We're in queue — listen to our personal notification doc
-                queueUnsubscribe = notifyRef.onSnapshot(function (doc) {
-                    if (doc.exists && doc.data().matchId) {
+                // Listen to the queue doc itself for match notification
+                queueUnsubscribe = queueRef.onSnapshot(function (doc) {
+                    if (doc.exists && doc.data().matched && doc.data().matchId) {
                         var data = doc.data();
                         if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
-                        // Clean up notification doc
-                        notifyRef.delete().catch(function () {});
+                        // Clean up queue doc
+                        queueRef.delete().catch(function () {});
                         callback({
                             matchId: data.matchId,
                             playerKey: 'player1',
@@ -545,6 +539,10 @@
             } else {
                 // We created the match — callback fires directly
                 callback(result);
+                // Clean up queue doc after a short delay
+                setTimeout(function () {
+                    queueRef.delete().catch(function () {});
+                }, 2000);
             }
         }).catch(function (err) {
             console.warn('Matchmaking error:', err);
@@ -554,15 +552,12 @@
     function leaveQueue() {
         if (!available || !db || !currentUser) return;
         if (queueUnsubscribe) { queueUnsubscribe(); queueUnsubscribe = null; }
-        // Remove from queue if we're the one waiting
         var queueRef = db.collection('matchmaking').doc('queue');
         queueRef.get().then(function (doc) {
             if (doc.exists && doc.data().uid === currentUser.uid) {
                 queueRef.delete().catch(function () {});
             }
         }).catch(function () {});
-        // Clean up notification doc
-        db.collection('matchmaking').doc('notify_' + currentUser.uid).delete().catch(function () {});
     }
 
     function listenToMatch(matchId, callback) {
