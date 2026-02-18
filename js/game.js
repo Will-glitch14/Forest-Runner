@@ -236,10 +236,15 @@
     // Cheat code: type "ADD500K" during gameplay to add 500,000 to score
     var cheatBuffer = '';
     var cheatCode = 'ADD500K';
+    // Cheat code: type "GETC0INS" anywhere (not in MP) to add 5,000 coins
+    var coinCheatBuffer = '';
+    var coinCheatCode = 'GETC0INS';
     document.addEventListener('keydown', function (e) {
-        if (S.mode !== 'playing' || S.mpMatchId) { cheatBuffer = ''; return; }
         var ch = e.key.toUpperCase();
-        if (ch.length === 1) {
+        if (ch.length !== 1) return;
+
+        // Score cheat (gameplay only, not MP)
+        if (S.mode === 'playing' && !S.mpMatchId) {
             cheatBuffer += ch;
             if (cheatBuffer.length > cheatCode.length) {
                 cheatBuffer = cheatBuffer.slice(-cheatCode.length);
@@ -248,6 +253,23 @@
                 S.score += 500000;
                 cheatBuffer = '';
             }
+        } else {
+            cheatBuffer = '';
+        }
+
+        // Coin cheat (any non-MP mode)
+        if (!S.mpMatchId) {
+            coinCheatBuffer += ch;
+            if (coinCheatBuffer.length > coinCheatCode.length) {
+                coinCheatBuffer = coinCheatBuffer.slice(-coinCheatCode.length);
+            }
+            if (coinCheatBuffer === coinCheatCode) {
+                FR.Shop.wallet += 5000;
+                FR.Shop.save();
+                coinCheatBuffer = '';
+            }
+        } else {
+            coinCheatBuffer = '';
         }
     });
 
