@@ -74,6 +74,9 @@ FR.S = {
     mpInvincibleTimer: 0,
     mpCountdown: 0,
     mpPlayerKey: null,
+    // Per-run quest counters
+    jumpsThisRun: 0,
+    slidesThisRun: 0,
 };
 
 // Load persisted high scores
@@ -259,6 +262,124 @@ FR.Shop.save = function () {
     } catch (e) {}
     if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
 };
+
+// ---- Daily Quests + XP System ----
+FR.Quests = {
+    dayIndex: 0,
+    quests: [],
+    xp: 0,
+    level: 1
+};
+
+FR.Quests.POOL = [
+    { type: 'score',    desc: 'Score {t} in a single run',      targets: [500, 1000, 2500],  coins: [75, 125, 200],  xp: [25, 50, 75] },
+    { type: 'coins',    desc: 'Collect {t} coins in a single run', targets: [10, 25, 50],    coins: [50, 100, 150],  xp: [25, 35, 50] },
+    { type: 'jumps',    desc: 'Jump {t} times in a single run',  targets: [15, 30, 50],      coins: [50, 75, 100],   xp: [25, 35, 50] },
+    { type: 'slides',   desc: 'Slide {t} times in a single run', targets: [10, 20, 35],      coins: [50, 75, 100],   xp: [25, 35, 50] },
+    { type: 'games',    desc: 'Play {t} games today',            targets: [3, 5, 7],          coins: [75, 100, 150],  xp: [30, 45, 60] },
+    { type: 'distance', desc: 'Run {t} distance in a single run', targets: [500, 1000, 2000], coins: [75, 125, 200],  xp: [25, 50, 75] },
+];
+
+FR.Quests._seed = function (dayIdx) {
+    // Simple seeded PRNG from dayIndex
+    var s = dayIdx * 2654435761 >>> 0;
+    return function () {
+        s = (s ^ (s << 13)) >>> 0;
+        s = (s ^ (s >> 17)) >>> 0;
+        s = (s ^ (s << 5)) >>> 0;
+        return (s >>> 0) / 4294967296;
+    };
+};
+
+FR.Quests.generate = function (dayIdx) {
+    var pool = FR.Quests.POOL;
+    var rng = FR.Quests._seed(dayIdx);
+    var quests = [];
+    // Pick 5 quests: shuffle pool indices, pick first 5, assign random difficulty
+    var indices = [];
+    for (var i = 0; i < pool.length; i++) indices.push(i);
+    // Fisher-Yates shuffle with seeded rng
+    for (var j = indices.length - 1; j > 0; j--) {
+        var k = Math.floor(rng() * (j + 1));
+        var tmp = indices[j]; indices[j] = indices[k]; indices[k] = tmp;
+    }
+    for (var q = 0; q < 5; q++) {
+        var tmpl = pool[indices[q]];
+        var diff = Math.floor(rng() * tmpl.targets.length);
+        quests.push({
+            type: tmpl.type,
+            desc: tmpl.desc.replace('{t}', tmpl.targets[diff]),
+            target: tmpl.targets[diff],
+            progress: 0,
+            reward: tmpl.coins[diff],
+            xpReward: tmpl.xp[diff],
+            claimed: false
+        });
+    }
+    return quests;
+};
+
+FR.Quests.updateProgress = function (stats) {
+    var quests = FR.Quests.quests;
+    for (var i = 0; i < quests.length; i++) {
+        var q = quests[i];
+        if (q.claimed) continue;
+        switch (q.type) {
+            case 'score':    q.progress = Math.max(q.progress, Math.floor(stats.score)); break;
+            case 'coins':    q.progress = Math.max(q.progress, stats.coins); break;
+            case 'jumps':    q.progress = Math.max(q.progress, stats.jumps); break;
+            case 'slides':   q.progress = Math.max(q.progress, stats.slides); break;
+            case 'distance': q.progress = Math.max(q.progress, Math.floor(stats.distance)); break;
+            case 'games':    q.progress += stats.games; break;
+        }
+    }
+    FR.Quests.save();
+};
+
+FR.Quests.calcLevel = function () {
+    FR.Quests.level = Math.floor(FR.Quests.xp / 200) + 1;
+};
+
+FR.Quests.save = function () {
+    try {
+        localStorage.setItem('fr_quests', JSON.stringify({
+            dayIndex: FR.Quests.dayIndex,
+            quests: FR.Quests.quests,
+            xp: FR.Quests.xp,
+            level: FR.Quests.level
+        }));
+    } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
+};
+
+// Load quests at startup
+(function () {
+    var today = Math.floor(Date.now() / 86400000);
+    try {
+        var saved = JSON.parse(localStorage.getItem('fr_quests') || 'null');
+        if (saved) {
+            FR.Quests.xp = saved.xp || 0;
+            FR.Quests.level = saved.level || 1;
+            if (saved.dayIndex === today && saved.quests && saved.quests.length === 5) {
+                FR.Quests.dayIndex = saved.dayIndex;
+                FR.Quests.quests = saved.quests;
+            } else {
+                // New day — regenerate
+                FR.Quests.dayIndex = today;
+                FR.Quests.quests = FR.Quests.generate(today);
+                FR.Quests.save();
+            }
+        } else {
+            FR.Quests.dayIndex = today;
+            FR.Quests.quests = FR.Quests.generate(today);
+            FR.Quests.save();
+        }
+    } catch (e) {
+        FR.Quests.dayIndex = today;
+        FR.Quests.quests = FR.Quests.generate(today);
+    }
+    FR.Quests.calcLevel();
+})();
 
 // ---- Settings (volume + key bindings) ----
 FR.Settings = {

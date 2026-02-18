@@ -104,6 +104,17 @@
         // Settings icon picker
         settingsIconRow:    document.getElementById('settings-icon-row'),
         settingsIconPicker: document.getElementById('settings-icon-picker'),
+        // Quests
+        questsScr:       document.getElementById('quests-screen'),
+        questsList:      document.getElementById('quests-list'),
+        questsBack:      document.getElementById('quests-back'),
+        questsXpLevel:   document.getElementById('quests-xp-level'),
+        questsXpFill:    document.getElementById('quests-xp-fill'),
+        questsXpText:    document.getElementById('quests-xp-text'),
+        questsBonusHint: document.getElementById('quests-bonus-hint'),
+        questsBonusBtn:  document.getElementById('quests-bonus-btn'),
+        startQuestsBtn:  document.getElementById('start-quests-btn'),
+        startXpBadge:    document.getElementById('start-xp-badge'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
     var settingsReturnTo = 'start';
@@ -337,6 +348,7 @@
             if (!S.jumping && !S.sliding) {
                 S.jumping = true;
                 S.vY = C.JUMP_FORCE;
+                S.jumpsThisRun++;
                 A.play('jump');
             }
         }
@@ -344,6 +356,7 @@
             if (!S.jumping && !S.sliding) {
                 S.sliding = true;
                 S.slideTmr = C.SLIDE_DUR;
+                S.slidesThisRun++;
                 A.play('slide');
             }
         }
@@ -729,6 +742,166 @@
     ui.invBack.addEventListener('click', function () { closeInventory(); });
 
     // ============================================================
+    // QUESTS SCREEN
+    // ============================================================
+    var questsReturnTo = 'start';
+    var questsBonusClaimed = false;
+
+    function openQuests(returnTo) {
+        questsReturnTo = returnTo || 'start';
+        // Check if new day
+        var today = Math.floor(Date.now() / 86400000);
+        if (FR.Quests.dayIndex !== today) {
+            FR.Quests.dayIndex = today;
+            FR.Quests.quests = FR.Quests.generate(today);
+            questsBonusClaimed = false;
+            FR.Quests.save();
+        }
+        ui.startScr.classList.add('hidden');
+        ui.overScr.classList.add('hidden');
+        ui.questsScr.classList.remove('hidden');
+        S.mode = 'quests';
+        renderQuests();
+    }
+
+    function closeQuests() {
+        ui.questsScr.classList.add('hidden');
+        S.mode = questsReturnTo;
+        if (questsReturnTo === 'start') {
+            ui.startScr.classList.remove('hidden');
+            updateXpBadge();
+            renderStartPowerups();
+        } else if (questsReturnTo === 'gameover') {
+            ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    var QUEST_ICONS = {
+        score: '\u{1F3AF}',
+        coins: '\u{1FA99}',
+        jumps: '\u{1F998}',
+        slides: '\u{1F3BF}',
+        games: '\u{1F3AE}',
+        distance: '\u{1F3C3}'
+    };
+
+    function renderQuests() {
+        var Q = FR.Quests;
+        // XP bar
+        var xpInLevel = Q.xp % 200;
+        var pct = Math.min(100, (xpInLevel / 200) * 100);
+        ui.questsXpLevel.textContent = 'Lv. ' + Q.level;
+        ui.questsXpFill.style.width = pct + '%';
+        ui.questsXpText.textContent = xpInLevel + ' / 200 XP';
+
+        // Quest cards
+        var html = '';
+        for (var i = 0; i < Q.quests.length; i++) {
+            var q = Q.quests[i];
+            var prog = Math.min(q.progress, q.target);
+            var progPct = Math.min(100, (prog / q.target) * 100);
+            var complete = prog >= q.target;
+            var icon = QUEST_ICONS[q.type] || '\u{2753}';
+
+            var btnClass, btnText;
+            if (q.claimed) {
+                btnClass = 'claimed';
+                btnText = '\u2713';
+            } else if (complete) {
+                btnClass = 'ready';
+                btnText = 'Claim';
+            } else {
+                btnClass = 'not-ready';
+                btnText = prog + '/' + q.target;
+            }
+
+            html += '<div class="quest-card' + (q.claimed ? ' quest-done' : '') + '">'
+                + '<div class="quest-icon">' + icon + '</div>'
+                + '<div class="quest-info">'
+                + '<div class="quest-desc">' + q.desc + '</div>'
+                + '<div class="quest-reward-text">' + q.reward + ' coins \u00B7 ' + q.xpReward + ' XP</div>'
+                + '<div class="quest-progress-bar"><div class="quest-progress-fill" style="width:' + progPct + '%"></div></div>'
+                + '<div class="quest-progress-text">' + prog + ' / ' + q.target + '</div>'
+                + '</div>'
+                + '<button class="quest-claim-btn ' + btnClass + '" data-quest="' + i + '">' + btnText + '</button>'
+                + '</div>';
+        }
+        ui.questsList.innerHTML = html;
+
+        // Bonus button
+        var allClaimed = Q.quests.every(function (q) { return q.claimed; });
+        if (allClaimed && !questsBonusClaimed) {
+            ui.questsBonusBtn.disabled = false;
+            ui.questsBonusHint.textContent = 'All quests complete! Claim your bonus!';
+        } else if (questsBonusClaimed) {
+            ui.questsBonusBtn.disabled = true;
+            ui.questsBonusBtn.textContent = 'Bonus Claimed \u2713';
+            ui.questsBonusHint.textContent = 'Come back tomorrow for new quests!';
+        } else {
+            ui.questsBonusBtn.disabled = true;
+            ui.questsBonusBtn.textContent = 'Claim Bonus';
+            ui.questsBonusHint.textContent = 'Complete all 5 for bonus 100 XP!';
+        }
+    }
+
+    function claimQuest(index) {
+        var q = FR.Quests.quests[index];
+        if (!q || q.claimed || q.progress < q.target) return;
+        q.claimed = true;
+        FR.Shop.wallet += q.reward;
+        FR.Quests.xp += q.xpReward;
+        FR.Quests.calcLevel();
+        FR.Shop.save();
+        FR.Quests.save();
+        renderQuests();
+    }
+
+    function claimAllBonus() {
+        if (questsBonusClaimed) return;
+        var allClaimed = FR.Quests.quests.every(function (q) { return q.claimed; });
+        if (!allClaimed) return;
+        questsBonusClaimed = true;
+        FR.Quests.xp += 100;
+        FR.Quests.calcLevel();
+        FR.Quests.save();
+        renderQuests();
+    }
+
+    function updateXpBadge() {
+        if (ui.startXpBadge) {
+            ui.startXpBadge.textContent = 'Lv. ' + FR.Quests.level;
+        }
+    }
+
+    // Check if bonus was already claimed today (all claimed + stored)
+    (function () {
+        var allClaimed = FR.Quests.quests.every(function (q) { return q.claimed; });
+        // If all claimed, check if bonus was claimed by looking for a stored flag
+        try {
+            var bonusDay = parseInt(localStorage.getItem('fr_quest_bonus_day') || '0', 10);
+            if (bonusDay === FR.Quests.dayIndex && allClaimed) questsBonusClaimed = true;
+        } catch (e) {}
+    })();
+
+    // Override claimAllBonus to persist flag
+    var _origClaimAllBonus = claimAllBonus;
+    claimAllBonus = function () {
+        _origClaimAllBonus();
+        try { localStorage.setItem('fr_quest_bonus_day', String(FR.Quests.dayIndex)); } catch (e) {}
+    };
+
+    // Event delegation for quest claim buttons
+    ui.questsList.addEventListener('click', function (e) {
+        var btn = e.target.closest('.quest-claim-btn');
+        if (!btn) return;
+        var idx = parseInt(btn.getAttribute('data-quest'), 10);
+        if (!isNaN(idx)) claimQuest(idx);
+    });
+    ui.questsBonusBtn.addEventListener('click', function () { claimAllBonus(); });
+    ui.questsBack.addEventListener('click', function () { closeQuests(); });
+    ui.startQuestsBtn.addEventListener('click', function () { openQuests('start'); });
+
+    // ============================================================
     // ROTATING SHOP (6-hour refresh)
     // ============================================================
     var ROTATION_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -902,6 +1075,7 @@
             }
         }
         ui.startPU.innerHTML = html;
+        updateXpBadge();
     }
 
     // Shop click handler (event delegation)
@@ -1941,6 +2115,8 @@
         A.init();
         A.setVolume(FR.Settings.volume);
         activatePowerups();
+        S.jumpsThisRun = 0;
+        S.slidesThisRun = 0;
         S.mode = 'playing';
         ui.startScr.classList.add('hidden');
         ui.hud.classList.add('visible');
@@ -1964,6 +2140,16 @@
         S.totalCoins += S.coins;
         try { localStorage.setItem('fr_tc', String(S.totalCoins)); } catch (e) {}
         FR.Shop.save();
+
+        // Update daily quest progress
+        FR.Quests.updateProgress({
+            score: S.score,
+            coins: S.coins,
+            jumps: S.jumpsThisRun,
+            slides: S.slidesThisRun,
+            distance: S.score,
+            games: 1
+        });
 
         if (Math.floor(S.score) > S.highScore) {
             S.highScore = Math.floor(S.score);
@@ -2018,6 +2204,7 @@
         S.runPh = 0; S.gTime = 0; S.lastObsZ = 22; S.lastCoinZ = 12;
         S.shakeAmt = 0; S.flashAlpha = 0; S.deathTimer = 0;
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
+        S.jumpsThisRun = 0; S.slidesThisRun = 0;
 
         // Clean up shield visual
         W.removeShield();
