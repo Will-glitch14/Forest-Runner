@@ -53,7 +53,8 @@
         settingsUsernameInput: document.getElementById('settings-username-input'),
         settingsUsernameSave:  document.getElementById('settings-username-save'),
         settingsUsernameMsg:   document.getElementById('settings-username-msg'),
-        ctrlGrid:     document.querySelector('.ctrl-grid'),
+        ctrlGrid:     document.querySelector('.controls-hint'),
+        startPlayBtn: document.getElementById('start-play-btn'),
         // Username modal
         usernameScr:     document.getElementById('username-screen'),
         usernameInput:   document.getElementById('username-input'),
@@ -292,7 +293,7 @@
         if (absDx < SWIPE_THRESHOLD && absDy < SWIPE_THRESHOLD) {
             // Short tap — but ignore if it landed on a button/link
             var tgt = e.target;
-            if (tgt && (tgt.tagName === 'BUTTON' || tgt.closest('button') || tgt.closest('.screen-btn') || tgt.closest('.auth-signin-btn'))) {
+            if (tgt && (tgt.tagName === 'BUTTON' || tgt.closest('button') || tgt.closest('.screen-btn') || tgt.closest('.play-btn') || tgt.closest('.nav-btn') || tgt.closest('.auth-signin-btn'))) {
                 return;
             }
             tapped = true;
@@ -1101,6 +1102,7 @@
     });
 
     ui.shopBack.addEventListener('click', function () { closeShop(); });
+    ui.startPlayBtn.addEventListener('click', function () { startGame(); });
     ui.startShopBtn.addEventListener('click', function () { openShop('start'); });
     ui.goShopBtn.addEventListener('click', function () { openShop('gameover'); });
     ui.goHomeBtn.addEventListener('click', function () { goHome(); });
@@ -1211,14 +1213,10 @@
     function updateCtrlGrid() {
         if (!ui.ctrlGrid) return;
         var B = FR.Settings.bindings;
-        var leftKeys = B.moveLeft.map(formatKey).join(' / ');
-        var rightKeys = B.moveRight.map(formatKey).join(' / ');
-        var jumpKeys = B.jump.map(formatKey).join(' / ');
-        var slideKeys = B.slide.map(formatKey).join(' / ');
-        ui.ctrlGrid.innerHTML =
-            '<span class="ctrl-key">' + leftKeys + ' / ' + rightKeys + '</span><span class="ctrl-desc">Switch Lanes</span>' +
-            '<span class="ctrl-key">' + jumpKeys + '</span><span class="ctrl-desc">Jump</span>' +
-            '<span class="ctrl-key">' + slideKeys + '</span><span class="ctrl-desc">Slide</span>';
+        var moveKeys = B.moveLeft.map(formatKey).concat(B.moveRight.map(formatKey)).join('/');
+        var jumpKeys = B.jump.map(formatKey).join('/');
+        var slideKeys = B.slide.map(formatKey).join('/');
+        ui.ctrlGrid.textContent = moveKeys + ' \u00B7 ' + jumpKeys + ' \u00B7 ' + slideKeys;
     }
 
     // Settings icon picker click handler
