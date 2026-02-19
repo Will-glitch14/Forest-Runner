@@ -114,6 +114,7 @@
         questsBonusHint: document.getElementById('quests-bonus-hint'),
         questsBonusBtn:  document.getElementById('quests-bonus-btn'),
         startQuestsBtn:  document.getElementById('start-quests-btn'),
+        startPassBtn:    document.getElementById('start-pass-btn'),
         startXpBadge:    document.getElementById('start-xp-badge'),
         // Quests tabs (Season Pass)
         questsTabDaily:      document.getElementById('quests-tab-daily'),
@@ -1167,6 +1168,16 @@
     ui.questsBonusBtn.addEventListener('click', function () { claimAllBonus(); });
     ui.questsBack.addEventListener('click', function () { closeQuests(); });
     ui.startQuestsBtn.addEventListener('click', function () { openQuests('start'); });
+    ui.startPassBtn.addEventListener('click', function () {
+        openQuests('start');
+        // Switch to Season Pass tab
+        questsActiveTab = 'pass';
+        ui.questsTabPass.classList.add('active');
+        ui.questsTabDaily.classList.remove('active');
+        ui.questsDailyContent.style.display = 'none';
+        ui.questsPassContent.style.display = '';
+        renderSeasonPass();
+    });
 
     // Quests tab switching (Daily / Season Pass)
     var questsActiveTab = 'daily';
