@@ -403,7 +403,8 @@ FR.Trails = {
         nature:   { name: 'Nature',   color: 0x33aa22, color2: 0x88dd44, owned: false, icon: '\uD83C\uDF3F' },
     },
     active: 'none',
-    cost: 300
+    cost: 300,
+    CRATE_COST: 500
 };
 
 (function () {

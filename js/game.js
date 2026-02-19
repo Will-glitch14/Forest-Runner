@@ -1488,6 +1488,21 @@
             crateHTML += '<div class="shop-crate-complete">Collection Complete!</div>';
         }
         ui.shopCrates.innerHTML = crateHTML;
+
+        // Trail Crates
+        var unownedTrails = getUnownedTrails();
+        var trailCrateHTML = '<div class="shop-section-title">Trail Crates</div>';
+        if (unownedTrails.length > 0) {
+            var canBuyTrailCrate = shop.wallet >= FR.Trails.CRATE_COST;
+            trailCrateHTML += '<div class="shop-crate-buy">';
+            trailCrateHTML += '<div class="shop-crate-emoji">\u{1F3A8}</div>';
+            trailCrateHTML += '<button class="shop-btn buy" data-action="buy-trail-crate"' + (canBuyTrailCrate ? '' : ' disabled') + '>' + FR.Trails.CRATE_COST + ' Open</button>';
+            trailCrateHTML += '<div class="shop-crate-remaining">' + unownedTrails.length + ' remaining</div>';
+            trailCrateHTML += '</div>';
+        } else {
+            trailCrateHTML += '<div class="shop-crate-complete">All Trails Unlocked!</div>';
+        }
+        ui.shopCrates.innerHTML += trailCrateHTML;
     }
 
     function renderStartPowerups() {
@@ -1543,6 +1558,8 @@
             }
         } else if (action === 'buy-crate') {
             openCrate();
+        } else if (action === 'buy-trail-crate') {
+            openTrailCrate();
         }
     });
 
@@ -1692,6 +1709,77 @@
             ui.crateRevealParticles.innerHTML = '';
             renderShop();
         }, 300);
+    }
+
+    // ============================================================
+    // TRAIL CRATE SYSTEM
+    // ============================================================
+    function getUnownedTrails() {
+        var unowned = [];
+        for (var k in FR.Trails.types) {
+            if (!FR.Trails.types[k].owned) unowned.push(k);
+        }
+        return unowned;
+    }
+
+    function rollTrailCrate() {
+        var unowned = getUnownedTrails();
+        if (unowned.length === 0) return null;
+        return unowned[Math.floor(Math.random() * unowned.length)];
+    }
+
+    function openTrailCrate() {
+        var shop = FR.Shop;
+        if (shop.wallet < FR.Trails.CRATE_COST) return;
+        var unowned = getUnownedTrails();
+        if (unowned.length === 0) return;
+
+        var wonKey = rollTrailCrate();
+        if (!wonKey) return;
+
+        shop.wallet -= FR.Trails.CRATE_COST;
+        FR.Trails.types[wonKey].owned = true;
+        shop.save();
+        FR.Trails.save();
+
+        showTrailCrateReveal(wonKey);
+    }
+
+    function showTrailCrateReveal(wonKey) {
+        var trail = FR.Trails.types[wonKey];
+        var trailColor = '#' + trail.color.toString(16).padStart(6, '0');
+
+        // Reset animation classes
+        ui.crateRevealCard.classList.remove('animate-in');
+        ui.crateRevealIcon.classList.remove('animate-in');
+        ui.crateRevealName.classList.remove('animate-in');
+        ui.crateRevealRarity.classList.remove('animate-in');
+        ui.crateRevealHint.classList.remove('animate-in');
+
+        // Set content
+        ui.crateRevealIcon.textContent = trail.icon;
+        ui.crateRevealIcon.style.background = trailColor;
+        ui.crateRevealName.textContent = trail.name;
+        ui.crateRevealRarity.textContent = 'Trail';
+        ui.crateRevealRarity.style.color = trailColor;
+        ui.crateRevealCard.style.borderColor = trailColor;
+
+        // Spawn particles
+        spawnCrateParticles(trailColor);
+
+        // Show modal
+        ui.crateReveal.classList.remove('hidden');
+
+        requestAnimationFrame(function () {
+            ui.crateReveal.classList.add('visible-bg');
+            ui.crateRevealCard.classList.add('animate-in');
+            ui.crateRevealIcon.classList.add('animate-in');
+            ui.crateRevealName.classList.add('animate-in');
+            ui.crateRevealRarity.classList.add('animate-in');
+            ui.crateRevealHint.classList.add('animate-in');
+        });
+
+        if (A.play) A.play('coin');
     }
 
     // Dismiss crate reveal on click
