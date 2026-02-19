@@ -401,9 +401,9 @@ FR.Effects = (function () {
     // ============================================================
     var trailParticles = [];
     var trailTimer = 0;
-    var TRAIL_MAX = 40;
-    var TRAIL_INTERVAL = 0.04;
-    var trailGeo = new THREE.BoxGeometry(0.06, 0.06, 0.06);
+    var TRAIL_MAX = 60;
+    var TRAIL_INTERVAL = 0.03;
+    var trailGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
 
     function updateTrail(dt, playerPos, speed, isGrounded) {
         var trail = FR.Trails;
@@ -429,7 +429,7 @@ FR.Effects = (function () {
                 playerPos.y + 0.3 + Math.random() * 0.6,
                 playerPos.z - 0.5 - Math.random() * 0.3
             );
-            mesh.scale.setScalar(0.6 + Math.random() * 0.4);
+            mesh.scale.setScalar(1.0 + Math.random() * 0.6);
             FR.scene.add(mesh);
             trailParticles.push({
                 mesh: mesh,
@@ -438,8 +438,8 @@ FR.Effects = (function () {
                     0.5 + Math.random() * 1.0,
                     -(speed * 0.05 + Math.random() * 0.5)
                 ),
-                life: 0.5 + Math.random() * 0.3,
-                maxLife: 0.8
+                life: 0.7 + Math.random() * 0.4,
+                maxLife: 1.1
             });
         }
         if (trailTimer >= TRAIL_INTERVAL) trailTimer = 0;
@@ -456,8 +456,8 @@ FR.Effects = (function () {
             }
             p.mesh.position.addScaledVector(p.vel, dt);
             var t = p.life / p.maxLife;
-            p.mesh.material.opacity = t * 0.8;
-            p.mesh.scale.setScalar(t * 0.6 + 0.2);
+            p.mesh.material.opacity = t * 0.9;
+            p.mesh.scale.setScalar(t * 1.0 + 0.3);
         }
     }
 
