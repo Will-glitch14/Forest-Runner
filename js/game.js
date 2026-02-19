@@ -124,6 +124,11 @@
         passDaysLeft:        document.getElementById('pass-days-left'),
         passCurrentLevel:    document.getElementById('pass-current-level'),
         passTierList:        document.getElementById('pass-tier-list'),
+        // Stats
+        statsScr:       document.getElementById('stats-screen'),
+        statsContent:   document.getElementById('stats-content'),
+        statsBack:      document.getElementById('stats-back'),
+        startStatsBtn:  document.getElementById('start-stats-btn'),
         // Inventory tabs (Achievements + Trails)
         invTabItems:     document.getElementById('inv-tab-items'),
         invTabAch:       document.getElementById('inv-tab-ach'),
@@ -470,6 +475,42 @@
             return obs;
         }
         return null;
+    }
+
+    // ---- Near-Miss Detection ----
+    var nearMissCooldown = 0;
+    var NEAR_MISS_CD = 0.5;
+
+    function checkNearMiss(dt) {
+        if (nearMissCooldown > 0) { nearMissCooldown -= dt; return; }
+        for (var i = 0; i < FR.obsList.length; i++) {
+            var obs = FR.obsList[i];
+            if (obs._nearMissed) continue;
+            // Must be in same XZ zone
+            if (Math.abs(S.pZ - obs.z) > 1.5) continue;
+            if (Math.abs(S.pX - C.LANES[obs.lane]) > C.LANE_W * 0.5) continue;
+
+            var dodged = false;
+            if ((obs.type === 'low' || obs.type === 'gap') && S.pY > 1.2 && S.pY < 2.5) {
+                dodged = true;
+            }
+            if (obs.type === 'high' && S.sliding === true) {
+                dodged = true;
+            }
+            if (dodged) {
+                obs._nearMissed = true;
+                nearMissCooldown = NEAR_MISS_CD;
+                triggerNearMiss();
+                return;
+            }
+        }
+    }
+
+    function triggerNearMiss() {
+        S.score += 200;
+        E.triggerFlash('#ffffff', 0.15);
+        E.spawnBurst(FR.player.group.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0x44ddff, 8, 3, 3);
+        A.play('nearmiss');
     }
 
     function checkCoinCollect() {
@@ -1206,6 +1247,83 @@
         var tier = parseInt(btn.getAttribute('data-tier'), 10);
         if (!isNaN(tier)) claimSeasonTier(tier);
     });
+
+    // ============================================================
+    // STATS DASHBOARD
+    // ============================================================
+    var statsReturnTo = 'start';
+
+    function openStats(returnTo) {
+        statsReturnTo = returnTo || 'start';
+        ui.startScr.classList.add('hidden');
+        ui.overScr.classList.add('hidden');
+        ui.statsScr.classList.remove('hidden');
+        S.mode = 'stats';
+        renderStats();
+    }
+
+    function closeStats() {
+        ui.statsScr.classList.add('hidden');
+        S.mode = statsReturnTo;
+        if (statsReturnTo === 'start') {
+            ui.startScr.classList.remove('hidden');
+            renderStartPowerups();
+        } else if (statsReturnTo === 'gameover') {
+            ui.overScr.classList.remove('hidden');
+        }
+    }
+
+    function renderStats() {
+        // Count achievement tiers claimed
+        var achDefs = FR.Achievements.defs;
+        var achProg = FR.Achievements.progress;
+        var totalTiers = achDefs.length * 3;
+        var claimedTiers = 0;
+        for (var a = 0; a < achDefs.length; a++) {
+            var p = achProg[achDefs[a].id] || { tier: 0 };
+            claimedTiers += p.tier;
+        }
+
+        var totalXp = FR.Quests.xp || 0;
+        var level = Math.floor(totalXp / 200) + 1;
+
+        function fmt(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 10000) return (n / 1000).toFixed(1) + 'K';
+            return String(n);
+        }
+
+        var html = '';
+        // Lifetime
+        html += '<div class="stats-section-title">Lifetime</div>';
+        html += '<div class="stats-grid">';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.totalGames) + '</div><div class="stat-label">Games Played</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.totalDistance) + '</div><div class="stat-label">Total Distance</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.totalJumps) + '</div><div class="stat-label">Total Jumps</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.totalSlides) + '</div><div class="stat-label">Total Slides</div></div>';
+        html += '<div class="stat-card wide"><div class="stat-value">' + fmt(S.totalCoins) + '</div><div class="stat-label">Total Coins Earned</div></div>';
+        html += '</div>';
+
+        // Records
+        html += '<div class="stats-section-title">Records</div>';
+        html += '<div class="stats-grid">';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.highScore) + '</div><div class="stat-label">High Score</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(S.highCoins) + '</div><div class="stat-label">Best Coins</div></div>';
+        html += '</div>';
+
+        // Progression
+        html += '<div class="stats-section-title">Progression</div>';
+        html += '<div class="stats-grid">';
+        html += '<div class="stat-card"><div class="stat-value">' + level + '</div><div class="stat-label">Level</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + fmt(totalXp) + '</div><div class="stat-label">Total XP</div></div>';
+        html += '<div class="stat-card wide"><div class="stat-value">' + claimedTiers + ' / ' + totalTiers + '</div><div class="stat-label">Achievement Tiers</div></div>';
+        html += '</div>';
+
+        ui.statsContent.innerHTML = html;
+    }
+
+    ui.statsBack.addEventListener('click', function () { closeStats(); });
+    ui.startStatsBtn.addEventListener('click', function () { openStats('start'); });
 
     // ============================================================
     // ROTATING SHOP (6-hour refresh)
@@ -2492,6 +2610,8 @@
 
         if (isNew) {
             ui.goNewBest.classList.add('show');
+            E.spawnConfetti(40);
+            A.play('fanfare');
         } else {
             ui.goNewBest.classList.remove('show');
         }
@@ -2647,6 +2767,11 @@
         W.updateShieldVisual(dt);
         E.updateShake(dt);
         E.updateTrail(dt, FR.player.group.position, S.speed, !S.jumping && !S.sliding);
+        E.updateRain(dt, S.pZ, S.gTime);
+        A.updateRainAmbient(E.isRaining());
+
+        // Near-miss detection
+        checkNearMiss(dt);
 
         // Environment
         updateEnvironment(dt);
@@ -2760,6 +2885,11 @@
         E.updateSpeedLines(dt, S.speed, S.pZ);
         E.updateLandingRings(dt);
         E.updateShake(dt);
+        E.updateRain(dt, S.pZ, S.gTime);
+        A.updateRainAmbient(E.isRaining());
+
+        // Near-miss detection
+        checkNearMiss(dt);
 
         // Environment
         updateEnvironment(dt);
@@ -2833,6 +2963,21 @@
                 closeLeaderboard();
             }
             for (var klb in pressed) pressed[klb] = false;
+            FR.camera.position.set(
+                Math.sin(t * 0.3) * 2.5,
+                5.5 + Math.sin(t * 0.5) * 0.6,
+                -8 + Math.sin(t * 0.2) * 2
+            );
+            FR.camera.lookAt(0, 2, 12);
+            updateEnvironment(dt);
+            E.updateClouds(dt, 0, S.gTime, nightAmount);
+            E.updateStars(dt, 0, S.gTime, nightAmount);
+
+        } else if (S.mode === 'stats') {
+            if (pressed['Escape']) {
+                closeStats();
+            }
+            for (var kst in pressed) pressed[kst] = false;
             FR.camera.position.set(
                 Math.sin(t * 0.3) * 2.5,
                 5.5 + Math.sin(t * 0.5) * 0.6,
@@ -2996,6 +3141,7 @@
         E.initFlash();
         E.initLeaves();
         E.initFireflies();
+        E.initRain();
         E.initClouds();
         E.initStars();
         E.initSpeedLines();

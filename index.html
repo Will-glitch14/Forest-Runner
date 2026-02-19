@@ -129,13 +129,15 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             text-align: center; color: #fff;
-            transition: opacity 0.5s ease;
+            transform: translateY(0);
+            transition: opacity 0.5s ease, transform 0.5s ease;
             touch-action: none;
             pointer-events: auto;
         }
         .screen.hidden {
             opacity: 0; pointer-events: none; visibility: hidden;
-            transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+            transform: translateY(12px);
+            transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0.5s;
         }
 
         /* Start */
@@ -219,14 +221,14 @@
         /* Nav grid */
         .nav-grid {
             display: grid;
-            grid-template-columns: repeat(6, 70px);
-            gap: 10px;
+            grid-template-columns: repeat(7, 62px);
+            gap: 8px;
             justify-content: center;
             margin-bottom: 10px;
         }
         .nav-btn {
-            width: 70px;
-            height: 70px;
+            width: 62px;
+            height: 62px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -788,6 +790,67 @@
         }
         .settings-username-msg.error { color: #e74c3c; }
         .settings-username-msg.success { color: #5cb85c; }
+
+        /* ---- Stats Screen ---- */
+        #stats-screen {
+            background: radial-gradient(ellipse at 50% 40%, rgba(10,30,60,0.94), rgba(4,12,28,0.98));
+            overflow-y: auto;
+            padding: 30px 20px;
+            align-items: center;
+            justify-content: flex-start;
+            touch-action: pan-y;
+        }
+        #stats-screen h1 {
+            font-family: 'Russo One', sans-serif;
+            font-size: 48px;
+            color: #4aa8ff;
+            text-shadow: 0 0 30px rgba(74,168,255,0.3);
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+        }
+        .stats-section-title {
+            font-family: 'Russo One', sans-serif;
+            font-size: 16px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 18px 0 10px;
+            width: 100%;
+            max-width: 440px;
+            text-align: left;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 440px;
+            margin-bottom: 8px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .stat-card.wide {
+            grid-column: span 2;
+        }
+        .stat-card .stat-value {
+            font-family: 'Russo One', sans-serif;
+            font-size: 28px;
+            color: #fff;
+            line-height: 1.1;
+        }
+        .stat-card .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
 
         /* ---- Username Picker Modal ---- */
         #username-screen {
@@ -2025,6 +2088,7 @@
                 <button class="nav-btn" id="start-lb-btn"><span class="nav-btn-icon">&#127942;</span><span class="nav-btn-label">Ranks</span></button>
                 <button class="nav-btn" id="start-quests-btn"><span class="nav-btn-icon">&#128203;</span><span class="nav-btn-label">Quests</span></button>
                 <button class="nav-btn" id="start-pass-btn"><span class="nav-btn-icon">&#127775;</span><span class="nav-btn-label">Pass</span></button>
+                <button class="nav-btn" id="start-stats-btn"><span class="nav-btn-icon">&#128202;</span><span class="nav-btn-label">Stats</span></button>
                 <button class="nav-btn" id="start-settings-btn"><span class="nav-btn-icon">&#9881;</span><span class="nav-btn-label">Settings</span></button>
             </div>
             <div class="active-powerups" id="start-powerups"></div>
@@ -2125,6 +2189,13 @@
                 <div class="pass-tier-list" id="pass-tier-list"></div>
             </div>
             <button class="shop-back-btn" id="quests-back">Back</button>
+        </div>
+
+        <!-- Stats Screen -->
+        <div id="stats-screen" class="screen hidden">
+            <h1>STATS</h1>
+            <div id="stats-content"></div>
+            <button class="shop-back-btn" id="stats-back">Back</button>
         </div>
 
         <!-- Settings Screen -->

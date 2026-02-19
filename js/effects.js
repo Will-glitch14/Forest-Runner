@@ -535,6 +535,130 @@ FR.Effects = (function () {
     }
 
     // ============================================================
+    // CONFETTI BURST (new high score celebration)
+    // ============================================================
+    var confettiColors = [0xff0000, 0xff8800, 0xffff00, 0x00cc44, 0x0088ff, 0x6644ff, 0xff44cc];
+
+    function spawnConfetti(count) {
+        count = count || 40;
+        var camPos = FR.camera.position.clone();
+        var camDir = new THREE.Vector3();
+        FR.camera.getWorldDirection(camDir);
+        var spawnPos = camPos.clone().addScaledVector(camDir, 6);
+        spawnPos.y += 4;
+        for (var i = 0; i < count; i++) {
+            var color = confettiColors[i % confettiColors.length];
+            var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true });
+            var p = new THREE.Mesh(particGeo, mat);
+            p.position.set(
+                spawnPos.x + (Math.random() - 0.5) * 6,
+                spawnPos.y + Math.random() * 2,
+                spawnPos.z + (Math.random() - 0.5) * 4
+            );
+            p.scale.set(1.5 + Math.random(), 0.5 + Math.random() * 0.5, 1);
+            var vel = new THREE.Vector3(
+                (Math.random() - 0.5) * 6,
+                Math.random() * 4 + 2,
+                (Math.random() - 0.5) * 6
+            );
+            FR.scene.add(p);
+            FR.particles.push({ mesh: p, vel: vel, life: 1.5 + Math.random() * 1.0, maxLife: 2.5 });
+        }
+    }
+
+    // ============================================================
+    // RAIN PARTICLE SYSTEM
+    // ============================================================
+    var rainCount = 120;
+    var rainPositions, rainVelocities, rainPoints;
+    var rainActive = false, rainTimer = 0, rainCooldown = 0, rainOpacity = 0, rainDuration = 0;
+
+    function makeRainTexture() {
+        var c = document.createElement('canvas'); c.width = 4; c.height = 16;
+        var x = c.getContext('2d');
+        var grd = x.createLinearGradient(2, 0, 2, 16);
+        grd.addColorStop(0, 'rgba(180,200,255,0)');
+        grd.addColorStop(0.3, 'rgba(180,200,255,0.8)');
+        grd.addColorStop(1, 'rgba(180,200,255,0)');
+        x.fillStyle = grd;
+        x.fillRect(0, 0, 4, 16);
+        return new THREE.CanvasTexture(c);
+    }
+
+    function initRain() {
+        var geo = new THREE.BufferGeometry();
+        rainPositions = new Float32Array(rainCount * 3);
+        rainVelocities = [];
+        for (var i = 0; i < rainCount; i++) {
+            rainPositions[i * 3]     = (Math.random() - 0.5) * 40;
+            rainPositions[i * 3 + 1] = Math.random() * 20;
+            rainPositions[i * 3 + 2] = Math.random() * 80;
+            rainVelocities.push({
+                y: -(12 + Math.random() * 6),
+                x: 0.5 + Math.random() * 0.5
+            });
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        var mat = new THREE.PointsMaterial({
+            map: makeRainTexture(),
+            size: 0.3,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            sizeAttenuation: true
+        });
+        rainPoints = new THREE.Points(geo, mat);
+        FR.scene.add(rainPoints);
+    }
+
+    function updateRain(dt, playerZ, gTime) {
+        if (!rainPoints) return;
+
+        // State machine: inactive -> active -> cooldown
+        if (!rainActive && rainCooldown <= 0) {
+            if (Math.random() < 0.001) {
+                rainActive = true;
+                rainDuration = 20 + Math.random() * 40;
+                rainTimer = 0;
+            }
+        }
+        if (rainActive) {
+            rainTimer += dt;
+            if (rainTimer >= rainDuration) {
+                rainActive = false;
+                rainCooldown = 30 + Math.random() * 30;
+            }
+        }
+        if (rainCooldown > 0) rainCooldown -= dt;
+
+        // Fade opacity
+        var targetOp = rainActive ? 0.6 : 0;
+        rainOpacity += (targetOp - rainOpacity) * Math.min(1, dt * 2);
+        rainPoints.material.opacity = rainOpacity;
+
+        if (rainOpacity < 0.01) return;
+
+        var pos = rainPoints.geometry.attributes.position;
+        for (var i = 0; i < rainCount; i++) {
+            var v = rainVelocities[i];
+            var x = pos.getX(i) + v.x * dt;
+            var y = pos.getY(i) + v.y * dt;
+            var z = pos.getZ(i);
+            if (y < -0.5 || z < playerZ - 20) {
+                x = (Math.random() - 0.5) * 40;
+                y = 15 + Math.random() * 10;
+                z = playerZ + Math.random() * 80;
+            }
+            pos.setXYZ(i, x, y, z);
+        }
+        pos.needsUpdate = true;
+    }
+
+    function isRaining() {
+        return rainActive;
+    }
+
+    // ============================================================
     // PUBLIC API
     // ============================================================
     return {
@@ -560,5 +684,9 @@ FR.Effects = (function () {
         updateLandingRings: updateLandingRings,
         updateTrail:      updateTrail,
         clearTrail:       clearTrail,
+        spawnConfetti:    spawnConfetti,
+        initRain:         initRain,
+        updateRain:       updateRain,
+        isRaining:        isRaining,
     };
 })();

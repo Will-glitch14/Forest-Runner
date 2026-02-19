@@ -215,6 +215,63 @@ FR.Audio = (function () {
                 oc2.start(t + 0.15); oc2.stop(t + 0.5);
                 break;
             }
+            case 'nearmiss': {
+                // Bandpass noise sweep 800Hz->3000Hz over 150ms
+                var nmLen = ctx.sampleRate * 0.15;
+                var nmBuf = ctx.createBuffer(1, nmLen, ctx.sampleRate);
+                var nmD = nmBuf.getChannelData(0);
+                for (var ni = 0; ni < nmLen; ni++) nmD[ni] = (Math.random() * 2 - 1);
+                var nmSrc = ctx.createBufferSource(); nmSrc.buffer = nmBuf;
+                var nmFilt = ctx.createBiquadFilter();
+                nmFilt.type = 'bandpass'; nmFilt.Q.value = 2;
+                nmFilt.frequency.setValueAtTime(800, t);
+                nmFilt.frequency.exponentialRampToValueAtTime(3000, t + 0.15);
+                var nmGain = ctx.createGain();
+                nmGain.gain.setValueAtTime(0.2, t);
+                nmGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                nmSrc.connect(nmFilt); nmFilt.connect(nmGain); nmGain.connect(masterGain);
+                nmSrc.start(t); nmSrc.stop(t + 0.15);
+                break;
+            }
+            case 'milestone': {
+                // Two sine tones staggered 120ms apart
+                var mFreqs = [660, 990];
+                for (var mi = 0; mi < 2; mi++) {
+                    var mo = ctx.createOscillator(), mg = ctx.createGain();
+                    mo.connect(mg); mg.connect(masterGain);
+                    mo.type = 'sine';
+                    var mOff = mi * 0.12;
+                    mo.frequency.setValueAtTime(mFreqs[mi], t + mOff);
+                    mg.gain.setValueAtTime(0.15, t + mOff);
+                    mg.gain.exponentialRampToValueAtTime(0.001, t + mOff + 0.2);
+                    mo.start(t + mOff); mo.stop(t + mOff + 0.2);
+                }
+                break;
+            }
+            case 'fanfare': {
+                // Three ascending notes C5->E5->G5 with harmonics
+                var fFreqs = [523.25, 659.25, 783.99];
+                for (var fi = 0; fi < 3; fi++) {
+                    var fOff = fi * 0.12;
+                    // Sine fundamental
+                    var fo1 = ctx.createOscillator(), fg1 = ctx.createGain();
+                    fo1.connect(fg1); fg1.connect(masterGain);
+                    fo1.type = 'sine';
+                    fo1.frequency.setValueAtTime(fFreqs[fi], t + fOff);
+                    fg1.gain.setValueAtTime(0.18, t + fOff);
+                    fg1.gain.exponentialRampToValueAtTime(0.001, t + fOff + 0.3);
+                    fo1.start(t + fOff); fo1.stop(t + fOff + 0.3);
+                    // Triangle harmonic at 2x
+                    var fo2 = ctx.createOscillator(), fg2 = ctx.createGain();
+                    fo2.connect(fg2); fg2.connect(masterGain);
+                    fo2.type = 'triangle';
+                    fo2.frequency.setValueAtTime(fFreqs[fi] * 2, t + fOff);
+                    fg2.gain.setValueAtTime(0.08, t + fOff);
+                    fg2.gain.exponentialRampToValueAtTime(0.001, t + fOff + 0.25);
+                    fo2.start(t + fOff); fo2.stop(t + fOff + 0.25);
+                }
+                break;
+            }
         }
     }
 
@@ -239,5 +296,39 @@ FR.Audio = (function () {
         if (masterGain) masterGain.gain.value = v;
     }
 
-    return { init: init, play: play, updateSteps: updateSteps, updateAmbient: updateAmbient, setVolume: setVolume };
+    // ---- Rain ambient layer ----
+    var rainSrc = null, rainGain = null;
+
+    function updateRainAmbient(isRaining) {
+        if (!ctx) return;
+        if (isRaining) {
+            if (!rainSrc) {
+                var len = ctx.sampleRate * 2;
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1);
+                rainSrc = ctx.createBufferSource();
+                rainSrc.buffer = buf; rainSrc.loop = true;
+                var filt = ctx.createBiquadFilter();
+                filt.type = 'highpass'; filt.frequency.value = 3500;
+                rainGain = ctx.createGain();
+                rainGain.gain.value = 0;
+                rainSrc.connect(filt); filt.connect(rainGain); rainGain.connect(masterGain);
+                rainSrc.start();
+            }
+            if (rainGain.gain.value < 0.06) {
+                rainGain.gain.value = Math.min(0.06, rainGain.gain.value + 0.001);
+            }
+        } else {
+            if (rainGain) {
+                rainGain.gain.value = Math.max(0, rainGain.gain.value - 0.001);
+                if (rainGain.gain.value <= 0 && rainSrc) {
+                    try { rainSrc.stop(); } catch (e) {}
+                    rainSrc = null; rainGain = null;
+                }
+            }
+        }
+    }
+
+    return { init: init, play: play, updateSteps: updateSteps, updateAmbient: updateAmbient, setVolume: setVolume, updateRainAmbient: updateRainAmbient };
 })();
