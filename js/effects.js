@@ -397,6 +397,80 @@ FR.Effects = (function () {
     }
 
     // ============================================================
+    // TRAIL PARTICLE SYSTEM
+    // ============================================================
+    var trailParticles = [];
+    var trailTimer = 0;
+    var TRAIL_MAX = 40;
+    var TRAIL_INTERVAL = 0.04;
+    var trailGeo = new THREE.BoxGeometry(0.06, 0.06, 0.06);
+
+    function updateTrail(dt, playerPos, speed, isGrounded) {
+        var trail = FR.Trails;
+        if (!trail || trail.active === 'none') return;
+        var tType = trail.types[trail.active];
+        if (!tType) return;
+
+        trailTimer += dt;
+        // Spawn particles
+        while (trailTimer >= TRAIL_INTERVAL && trailParticles.length < TRAIL_MAX) {
+            trailTimer -= TRAIL_INTERVAL;
+            var color;
+            if (tType.rainbow) {
+                var hue = (Date.now() * 0.001) % 1;
+                color = new THREE.Color().setHSL(hue, 1, 0.5);
+            } else {
+                color = new THREE.Color(Math.random() < 0.5 ? tType.color : tType.color2);
+            }
+            var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
+            var mesh = new THREE.Mesh(trailGeo, mat);
+            mesh.position.set(
+                playerPos.x + (Math.random() - 0.5) * 0.4,
+                playerPos.y + 0.3 + Math.random() * 0.6,
+                playerPos.z - 0.5 - Math.random() * 0.3
+            );
+            mesh.scale.setScalar(0.6 + Math.random() * 0.4);
+            FR.scene.add(mesh);
+            trailParticles.push({
+                mesh: mesh,
+                vel: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.8,
+                    0.5 + Math.random() * 1.0,
+                    -(speed * 0.05 + Math.random() * 0.5)
+                ),
+                life: 0.5 + Math.random() * 0.3,
+                maxLife: 0.8
+            });
+        }
+        if (trailTimer >= TRAIL_INTERVAL) trailTimer = 0;
+
+        // Update particles
+        for (var i = trailParticles.length - 1; i >= 0; i--) {
+            var p = trailParticles[i];
+            p.life -= dt;
+            if (p.life <= 0) {
+                FR.scene.remove(p.mesh);
+                p.mesh.material.dispose();
+                trailParticles.splice(i, 1);
+                continue;
+            }
+            p.mesh.position.addScaledVector(p.vel, dt);
+            var t = p.life / p.maxLife;
+            p.mesh.material.opacity = t * 0.8;
+            p.mesh.scale.setScalar(t * 0.6 + 0.2);
+        }
+    }
+
+    function clearTrail() {
+        for (var i = trailParticles.length - 1; i >= 0; i--) {
+            FR.scene.remove(trailParticles[i].mesh);
+            trailParticles[i].mesh.material.dispose();
+        }
+        trailParticles.length = 0;
+        trailTimer = 0;
+    }
+
+    // ============================================================
     // ENHANCED DEATH BURST
     // ============================================================
     var sphereGeo = new THREE.SphereGeometry(0.06, 5, 4);
@@ -484,5 +558,7 @@ FR.Effects = (function () {
         spawnDeathBurst:  spawnDeathBurst,
         spawnLandingRing: spawnLandingRing,
         updateLandingRings: updateLandingRings,
+        updateTrail:      updateTrail,
+        clearTrail:       clearTrail,
     };
 })();

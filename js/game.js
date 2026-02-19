@@ -115,6 +115,21 @@
         questsBonusBtn:  document.getElementById('quests-bonus-btn'),
         startQuestsBtn:  document.getElementById('start-quests-btn'),
         startXpBadge:    document.getElementById('start-xp-badge'),
+        // Quests tabs (Season Pass)
+        questsTabDaily:      document.getElementById('quests-tab-daily'),
+        questsTabPass:       document.getElementById('quests-tab-pass'),
+        questsDailyContent:  document.getElementById('quests-daily-content'),
+        questsPassContent:   document.getElementById('quests-pass-content'),
+        passDaysLeft:        document.getElementById('pass-days-left'),
+        passCurrentLevel:    document.getElementById('pass-current-level'),
+        passTierList:        document.getElementById('pass-tier-list'),
+        // Inventory tabs (Achievements + Trails)
+        invTabItems:     document.getElementById('inv-tab-items'),
+        invTabAch:       document.getElementById('inv-tab-ach'),
+        invItemsContent: document.getElementById('inv-items-content'),
+        invAchContent:   document.getElementById('inv-ach-content'),
+        achGrid:         document.getElementById('ach-grid'),
+        trailGrid:       document.getElementById('trail-grid'),
     };
     var shopReturnTo = 'start'; // which screen to go back to
     var settingsReturnTo = 'start';
@@ -645,6 +660,12 @@
         ui.shopScr.classList.add('hidden');
         ui.invScr.classList.remove('hidden');
         S.mode = 'inventory';
+        // Reset to Items tab
+        invActiveTab = 'items';
+        ui.invTabItems.classList.add('active');
+        ui.invTabAch.classList.remove('active');
+        ui.invItemsContent.style.display = '';
+        ui.invAchContent.style.display = 'none';
         renderInventory();
     }
 
@@ -711,6 +732,9 @@
             }
         }
         ui.invIcons.innerHTML = iconHTML;
+
+        // Render trails
+        renderTrails();
     }
 
     // Inventory click handler (event delegation)
@@ -737,9 +761,246 @@
         }
     });
 
+    // Inventory tab switching
+    var invActiveTab = 'items';
+    ui.invTabItems.addEventListener('click', function () {
+        if (invActiveTab === 'items') return;
+        invActiveTab = 'items';
+        ui.invTabItems.classList.add('active');
+        ui.invTabAch.classList.remove('active');
+        ui.invItemsContent.style.display = '';
+        ui.invAchContent.style.display = 'none';
+    });
+    ui.invTabAch.addEventListener('click', function () {
+        if (invActiveTab === 'ach') return;
+        invActiveTab = 'ach';
+        ui.invTabAch.classList.add('active');
+        ui.invTabItems.classList.remove('active');
+        ui.invItemsContent.style.display = 'none';
+        ui.invAchContent.style.display = '';
+        renderAchievements();
+    });
+
+    // Trail click handler (event delegation on inv screen)
+    ui.invScr.addEventListener('click', function (e) {
+        var trailBtn = e.target.closest('[data-action="equip-trail"]');
+        if (trailBtn) {
+            var key = trailBtn.getAttribute('data-key');
+            if (FR.Trails.types[key] && FR.Trails.types[key].owned) {
+                FR.Trails.active = key;
+                FR.Trails.save();
+                renderTrails();
+            }
+            return;
+        }
+        var buyBtn = e.target.closest('[data-action="buy-trail"]');
+        if (buyBtn) {
+            var bkey = buyBtn.getAttribute('data-key');
+            if (FR.Trails.types[bkey] && !FR.Trails.types[bkey].owned && FR.Shop.wallet >= FR.Trails.cost) {
+                FR.Shop.wallet -= FR.Trails.cost;
+                FR.Trails.types[bkey].owned = true;
+                FR.Shop.save();
+                FR.Trails.save();
+                renderTrails();
+            }
+            return;
+        }
+    });
+
+    // Achievement claim handler
+    ui.achGrid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.ach-claim-btn');
+        if (!btn) return;
+        var achId = btn.getAttribute('data-ach-id');
+        var tier = parseInt(btn.getAttribute('data-tier'), 10);
+        if (!isNaN(tier)) claimAchievement(achId, tier);
+    });
+
     ui.shopInvBtn.addEventListener('click', function () { openInventory('shop'); });
     ui.startInvBtn.addEventListener('click', function () { openInventory('start'); });
     ui.invBack.addEventListener('click', function () { closeInventory(); });
+
+    // ============================================================
+    // ACHIEVEMENT SYSTEM
+    // ============================================================
+    function checkAchievements() {
+        var defs = FR.Achievements.defs;
+        var prog = FR.Achievements.progress;
+        for (var i = 0; i < defs.length; i++) {
+            var def = defs[i];
+            var val = FR.S[def.stat] || 0;
+            var claimed = prog[def.id] || 0;
+            // Just mark which tiers are earned (doesn't auto-claim)
+            // Progress is checked when rendering UI
+        }
+    }
+
+    function getAchievementEarnedTier(def) {
+        var val = FR.S[def.stat] || 0;
+        var earned = 0;
+        for (var t = 0; t < def.tiers.length; t++) {
+            if (val >= def.tiers[t]) earned = t + 1;
+        }
+        return earned;
+    }
+
+    function renderAchievements() {
+        var defs = FR.Achievements.defs;
+        var prog = FR.Achievements.progress;
+        var colors = FR.Achievements.TIER_COLORS;
+        var html = '';
+        for (var i = 0; i < defs.length; i++) {
+            var def = defs[i];
+            var claimed = prog[def.id] || 0;
+            var earned = getAchievementEarnedTier(def);
+            var val = FR.S[def.stat] || 0;
+
+            html += '<div class="ach-card">';
+            html += '<div class="ach-icon">' + def.icon + '</div>';
+            html += '<div class="ach-info">';
+            html += '<div class="ach-name">' + def.name + '</div>';
+            html += '<div class="ach-tiers-row">';
+            for (var t = 0; t < 3; t++) {
+                var isEarned = earned > t;
+                var isClaimed = claimed > t;
+                html += '<span class="ach-tier-dot' + (isClaimed ? ' claimed' : isEarned ? ' earned' : '') + '" style="' + (isEarned || isClaimed ? 'background:' + colors[t] : '') + '" title="' + def.tiers[t].toLocaleString() + '"></span>';
+            }
+            html += '</div>';
+            // Show current progress vs next unclaimed tier
+            var nextTier = claimed < 3 ? claimed : 2;
+            html += '<div class="ach-progress-text">' + val.toLocaleString() + ' / ' + def.tiers[nextTier].toLocaleString() + '</div>';
+            html += '</div>';
+            // Claim button
+            if (earned > claimed) {
+                html += '<button class="ach-claim-btn" data-ach-id="' + def.id + '" data-tier="' + claimed + '">Claim ' + def.coins[claimed] + '</button>';
+            } else if (claimed >= 3) {
+                html += '<span class="ach-complete">\u2713</span>';
+            } else {
+                html += '<span class="ach-locked">\uD83D\uDD12</span>';
+            }
+            html += '</div>';
+        }
+        ui.achGrid.innerHTML = html;
+    }
+
+    function claimAchievement(achId, tierIdx) {
+        var defs = FR.Achievements.defs;
+        var prog = FR.Achievements.progress;
+        var def = null;
+        for (var i = 0; i < defs.length; i++) {
+            if (defs[i].id === achId) { def = defs[i]; break; }
+        }
+        if (!def) return;
+        var claimed = prog[achId] || 0;
+        if (claimed !== tierIdx) return;
+        var earned = getAchievementEarnedTier(def);
+        if (earned <= claimed) return;
+        // Award coins
+        FR.Shop.wallet += def.coins[tierIdx];
+        prog[achId] = claimed + 1;
+        FR.Shop.save();
+        FR.Achievements.save();
+        renderAchievements();
+    }
+
+    // ============================================================
+    // TRAIL UI (inside inventory)
+    // ============================================================
+    function renderTrails() {
+        var trails = FR.Trails;
+        var html = '';
+        for (var k in trails.types) {
+            var t = trails.types[k];
+            var isActive = trails.active === k;
+            html += '<div class="trail-cell' + (isActive ? ' equipped' : '') + '">';
+            html += '<div class="trail-preview">' + t.icon + '</div>';
+            html += '<div class="trail-name">' + t.name + '</div>';
+            if (t.owned) {
+                if (isActive) {
+                    html += '<span class="trail-status">Equipped</span>';
+                } else {
+                    html += '<button class="trail-equip-btn" data-action="equip-trail" data-key="' + k + '">Equip</button>';
+                }
+            } else {
+                html += '<button class="trail-buy-btn" data-action="buy-trail" data-key="' + k + '"' + (FR.Shop.wallet >= trails.cost ? '' : ' disabled') + '>' + trails.cost + ' Buy</button>';
+            }
+            html += '</div>';
+        }
+        ui.trailGrid.innerHTML = html;
+    }
+
+    // ============================================================
+    // SEASON PASS
+    // ============================================================
+    function renderSeasonPass() {
+        var SP = FR.SeasonPass;
+        var Q = FR.Quests;
+        var now = Math.floor(Date.now() / 86400000);
+        var daysLeft = Math.max(0, 30 - (now - SP.seasonStart));
+        ui.passDaysLeft.textContent = 'Season ends in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '');
+        ui.passCurrentLevel.textContent = 'Level ' + Q.level + ' / 30';
+
+        var html = '';
+        for (var i = 0; i < 30; i++) {
+            var reward = SP.REWARDS[i];
+            var unlocked = Q.level >= i + 1;
+            var claimed = SP.tiers[i] === true;
+            var stateClass = claimed ? 'claimed' : unlocked ? 'unlocked' : 'locked';
+            html += '<div class="pass-tier-card ' + stateClass + '">';
+            html += '<div class="pass-tier-num">' + (i + 1) + '</div>';
+            html += '<div class="pass-tier-icon">' + reward.icon + '</div>';
+            html += '<div class="pass-tier-label">' + reward.label + '</div>';
+            if (claimed) {
+                html += '<span class="pass-claimed-check">\u2713</span>';
+            } else if (unlocked) {
+                html += '<button class="pass-claim-btn" data-tier="' + i + '">Claim</button>';
+            } else {
+                html += '<span class="pass-lock">\uD83D\uDD12</span>';
+            }
+            html += '</div>';
+        }
+        ui.passTierList.innerHTML = html;
+    }
+
+    function claimSeasonTier(tierIdx) {
+        var SP = FR.SeasonPass;
+        var Q = FR.Quests;
+        if (tierIdx < 0 || tierIdx >= 30) return;
+        if (SP.tiers[tierIdx]) return; // already claimed
+        if (Q.level < tierIdx + 1) return; // not unlocked
+
+        var reward = SP.REWARDS[tierIdx];
+        switch (reward.type) {
+            case 'coins':
+                FR.Shop.wallet += reward.value;
+                break;
+            case 'outfit':
+                if (FR.Shop.cosmetics[reward.value]) {
+                    FR.Shop.cosmetics[reward.value].owned = true;
+                }
+                break;
+            case 'icon':
+                if (FR.Shop.icons[reward.value]) {
+                    FR.Shop.icons[reward.value].owned = true;
+                }
+                break;
+            case 'powerup':
+                if (FR.Shop.powerups[reward.value]) {
+                    FR.Shop.powerups[reward.value].qty += (reward.qty || 1);
+                }
+                break;
+            case 'trail':
+                if (FR.Trails.types[reward.value]) {
+                    FR.Trails.types[reward.value].owned = true;
+                    FR.Trails.save();
+                }
+                break;
+        }
+        SP.tiers[tierIdx] = true;
+        FR.Shop.save();
+        SP.save();
+        renderSeasonPass();
+    }
 
     // ============================================================
     // QUESTS SCREEN
@@ -761,6 +1022,12 @@
         ui.overScr.classList.add('hidden');
         ui.questsScr.classList.remove('hidden');
         S.mode = 'quests';
+        // Reset to Daily tab
+        questsActiveTab = 'daily';
+        ui.questsTabDaily.classList.add('active');
+        ui.questsTabPass.classList.remove('active');
+        ui.questsDailyContent.style.display = '';
+        ui.questsPassContent.style.display = 'none';
         renderQuests();
     }
 
@@ -900,6 +1167,34 @@
     ui.questsBonusBtn.addEventListener('click', function () { claimAllBonus(); });
     ui.questsBack.addEventListener('click', function () { closeQuests(); });
     ui.startQuestsBtn.addEventListener('click', function () { openQuests('start'); });
+
+    // Quests tab switching (Daily / Season Pass)
+    var questsActiveTab = 'daily';
+    ui.questsTabDaily.addEventListener('click', function () {
+        if (questsActiveTab === 'daily') return;
+        questsActiveTab = 'daily';
+        ui.questsTabDaily.classList.add('active');
+        ui.questsTabPass.classList.remove('active');
+        ui.questsDailyContent.style.display = '';
+        ui.questsPassContent.style.display = 'none';
+    });
+    ui.questsTabPass.addEventListener('click', function () {
+        if (questsActiveTab === 'pass') return;
+        questsActiveTab = 'pass';
+        ui.questsTabPass.classList.add('active');
+        ui.questsTabDaily.classList.remove('active');
+        ui.questsDailyContent.style.display = 'none';
+        ui.questsPassContent.style.display = '';
+        renderSeasonPass();
+    });
+
+    // Season Pass claim handler
+    ui.passTierList.addEventListener('click', function (e) {
+        var btn = e.target.closest('.pass-claim-btn');
+        if (!btn) return;
+        var tier = parseInt(btn.getAttribute('data-tier'), 10);
+        if (!isNaN(tier)) claimSeasonTier(tier);
+    });
 
     // ============================================================
     // ROTATING SHOP (6-hour refresh)
@@ -2129,6 +2424,7 @@
         E.triggerShake(1.5);
         E.triggerFlash('#ff2200', 0.3);
         E.spawnDeathBurst(FR.player.group.position.clone());
+        E.clearTrail();
     }
 
     function showGameOver() {
@@ -2150,6 +2446,21 @@
             distance: S.score,
             games: 1
         });
+
+        // Accumulate lifetime stats
+        S.totalGames++;
+        S.totalDistance += Math.floor(S.score);
+        S.totalJumps += S.jumpsThisRun;
+        S.totalSlides += S.slidesThisRun;
+        try {
+            localStorage.setItem('fr_tg', String(S.totalGames));
+            localStorage.setItem('fr_td', String(S.totalDistance));
+            localStorage.setItem('fr_tj', String(S.totalJumps));
+            localStorage.setItem('fr_ts', String(S.totalSlides));
+        } catch (e) {}
+
+        // Check achievements
+        checkAchievements();
 
         if (Math.floor(S.score) > S.highScore) {
             S.highScore = Math.floor(S.score);
@@ -2206,8 +2517,9 @@
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
         S.jumpsThisRun = 0; S.slidesThisRun = 0;
 
-        // Clean up shield visual
+        // Clean up shield visual and trail
         W.removeShield();
+        E.clearTrail();
 
         // Rebuild
         W.initSegments();
@@ -2323,6 +2635,7 @@
         E.updateLandingRings(dt);
         W.updateShieldVisual(dt);
         E.updateShake(dt);
+        E.updateTrail(dt, FR.player.group.position, S.speed, !S.jumping && !S.sliding);
 
         // Environment
         updateEnvironment(dt);

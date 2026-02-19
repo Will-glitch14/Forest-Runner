@@ -77,6 +77,11 @@ FR.S = {
     // Per-run quest counters
     jumpsThisRun: 0,
     slidesThisRun: 0,
+    // Lifetime stats
+    totalGames: 0,
+    totalDistance: 0,
+    totalJumps: 0,
+    totalSlides: 0,
 };
 
 // Load persisted high scores
@@ -84,6 +89,10 @@ try {
     FR.S.highScore = parseInt(localStorage.getItem('fr_hs') || '0', 10);
     FR.S.highCoins = parseInt(localStorage.getItem('fr_hc') || '0', 10);
     FR.S.totalCoins = parseInt(localStorage.getItem('fr_tc') || '0', 10);
+    FR.S.totalGames = parseInt(localStorage.getItem('fr_tg') || '0', 10);
+    FR.S.totalDistance = parseInt(localStorage.getItem('fr_td') || '0', 10);
+    FR.S.totalJumps = parseInt(localStorage.getItem('fr_tj') || '0', 10);
+    FR.S.totalSlides = parseInt(localStorage.getItem('fr_ts') || '0', 10);
 } catch (e) { /* localStorage not available */ }
 
 // ---- Shop Data ----
@@ -380,6 +389,159 @@ FR.Quests.save = function () {
     }
     FR.Quests.calcLevel();
 })();
+
+// ---- Trails ----
+FR.Trails = {
+    types: {
+        none:     { name: 'None',     color: 0x000000, color2: 0x000000, owned: true,  icon: '\u2715' },
+        fire:     { name: 'Fire',     color: 0xff4400, color2: 0xffaa00, owned: false, icon: '\uD83D\uDD25' },
+        ice:      { name: 'Ice',      color: 0x44ccff, color2: 0xaaeeff, owned: false, icon: '\u2744\uFE0F' },
+        rainbow:  { name: 'Rainbow',  color: 0xff0000, color2: 0x00ff00, owned: false, icon: '\uD83C\uDF08', rainbow: true },
+        gold:     { name: 'Gold',     color: 0xffd700, color2: 0xffaa00, owned: false, icon: '\uD83D\uDCAB' },
+        shadow:   { name: 'Shadow',   color: 0x2a2a3a, color2: 0x555566, owned: false, icon: '\uD83C\uDF11' },
+        electric: { name: 'Electric', color: 0x3388ff, color2: 0x88ddff, owned: false, icon: '\u26A1' },
+        nature:   { name: 'Nature',   color: 0x33aa22, color2: 0x88dd44, owned: false, icon: '\uD83C\uDF3F' },
+    },
+    active: 'none',
+    cost: 300
+};
+
+(function () {
+    try {
+        var saved = JSON.parse(localStorage.getItem('fr_trails') || 'null');
+        if (saved) {
+            if (saved.active && FR.Trails.types[saved.active]) FR.Trails.active = saved.active;
+            for (var k in saved.owned || {}) {
+                if (FR.Trails.types[k]) FR.Trails.types[k].owned = saved.owned[k];
+            }
+        }
+    } catch (e) {}
+})();
+
+FR.Trails.save = function () {
+    try {
+        var owned = {};
+        for (var k in FR.Trails.types) owned[k] = FR.Trails.types[k].owned;
+        localStorage.setItem('fr_trails', JSON.stringify({ active: FR.Trails.active, owned: owned }));
+    } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
+};
+
+// ---- Achievements ----
+FR.Achievements = {
+    TIER_COLORS: ['#cd7f32', '#c0c0c0', '#ffd700'],
+    defs: [
+        { id: 'dist1',   stat: 'totalDistance', name: 'Trail Blazer',    icon: '\uD83E\uDDB6', tiers: [5000, 25000, 100000],       coins: [50, 150, 500] },
+        { id: 'dist2',   stat: 'totalDistance', name: 'Marathon Runner', icon: '\uD83C\uDFC3', tiers: [250000, 500000, 1000000],    coins: [200, 500, 1500] },
+        { id: 'coin1',   stat: 'totalCoins',    name: 'Coin Collector',  icon: '\uD83E\uDE99', tiers: [500, 2500, 10000],           coins: [50, 150, 500] },
+        { id: 'coin2',   stat: 'totalCoins',    name: 'Gold Rush',       icon: '\uD83D\uDCB0', tiers: [25000, 50000, 100000],       coins: [200, 500, 1500] },
+        { id: 'game1',   stat: 'totalGames',    name: 'Dedicated Runner',icon: '\uD83C\uDFAE', tiers: [25, 100, 500],               coins: [50, 200, 1000] },
+        { id: 'game2',   stat: 'totalGames',    name: 'Veteran',         icon: '\uD83C\uDF96\uFE0F', tiers: [1000, 2500, 5000],     coins: [500, 1000, 2000] },
+        { id: 'jump1',   stat: 'totalJumps',    name: 'High Flyer',     icon: '\uD83E\uDD98', tiers: [100, 500, 2000],              coins: [50, 150, 500] },
+        { id: 'jump2',   stat: 'totalJumps',    name: 'Sky Dancer',     icon: '\uD83E\uDD85', tiers: [5000, 15000, 50000],          coins: [200, 500, 1500] },
+        { id: 'slide1',  stat: 'totalSlides',   name: 'Slider',          icon: '\uD83C\uDFBF', tiers: [100, 500, 2000],             coins: [50, 150, 500] },
+        { id: 'slide2',  stat: 'totalSlides',   name: 'Ground Master',   icon: '\uD83D\uDCA8', tiers: [5000, 15000, 50000],         coins: [200, 500, 1500] },
+        { id: 'hs1',     stat: 'highScore',     name: 'Score Chaser',    icon: '\uD83C\uDFAF', tiers: [50000, 250000, 1000000],     coins: [100, 300, 1000] },
+        { id: 'hs2',     stat: 'highScore',     name: 'Legend',           icon: '\uD83D\uDC51', tiers: [2500000, 5000000, 10000000], coins: [500, 1500, 5000] },
+        { id: 'hc1',     stat: 'highCoins',     name: 'Lucky Run',       icon: '\uD83C\uDF40', tiers: [25, 50, 100],                coins: [50, 150, 500] },
+        { id: 'hc2',     stat: 'highCoins',     name: 'Treasure Hunter', icon: '\uD83D\uDC8E', tiers: [150, 250, 500],              coins: [200, 500, 1500] },
+        { id: 'special', stat: 'totalGames',    name: 'All-Star',        icon: '\u2B50',        tiers: [50, 200, 1000],             coins: [100, 300, 1000] },
+    ],
+    progress: {}
+};
+
+(function () {
+    try {
+        var saved = JSON.parse(localStorage.getItem('fr_ach') || 'null');
+        if (saved) FR.Achievements.progress = saved;
+    } catch (e) {}
+})();
+
+FR.Achievements.save = function () {
+    try {
+        localStorage.setItem('fr_ach', JSON.stringify(FR.Achievements.progress));
+    } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
+};
+
+// ---- Season Pass ----
+FR.SeasonPass = {
+    seasonStart: 0,
+    tiers: [],
+    bonusClaimed: false,
+    REWARDS: [
+        { type: 'coins',   value: 100,  label: '100 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'arctic',   label: 'Arctic Outfit',    icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'wolf',     label: 'Wolf Icon',        icon: '\uD83D\uDC3A' },
+        { type: 'powerup', value: 'shield',   qty: 2, label: '2x Shield',  icon: '\uD83D\uDEE1' },
+        { type: 'trail',   value: 'fire',     label: 'Fire Trail',       icon: '\uD83D\uDD25' },
+        { type: 'coins',   value: 200,  label: '200 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'crimson',  label: 'Crimson Outfit',   icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'fox',      label: 'Fox Icon',         icon: '\uD83E\uDD8A' },
+        { type: 'powerup', value: 'magnet',   qty: 2, label: '2x Magnet',  icon: '\uD83E\uDDF2' },
+        { type: 'trail',   value: 'ice',      label: 'Ice Trail',        icon: '\u2744\uFE0F' },
+        { type: 'coins',   value: 300,  label: '300 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'ranger',   label: 'Ranger Outfit',    icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'bear',     label: 'Bear Icon',        icon: '\uD83D\uDC3B' },
+        { type: 'powerup', value: 'doubleCoins', qty: 2, label: '2x Double Coins', icon: '\u00D72' },
+        { type: 'trail',   value: 'rainbow',  label: 'Rainbow Trail',    icon: '\uD83C\uDF08' },
+        { type: 'coins',   value: 400,  label: '400 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'golden',   label: 'Golden Outfit',    icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'eagle',    label: 'Eagle Icon',       icon: '\uD83E\uDD85' },
+        { type: 'powerup', value: 'headStart', qty: 2, label: '2x Head Start', icon: '\uD83C\uDFC3' },
+        { type: 'trail',   value: 'gold',     label: 'Gold Trail',       icon: '\uD83D\uDCAB' },
+        { type: 'coins',   value: 500,  label: '500 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'midnight', label: 'Midnight Outfit',  icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'dragon',   label: 'Dragon Icon',      icon: '\uD83D\uDC32' },
+        { type: 'powerup', value: 'shield',   qty: 3, label: '3x Shield',  icon: '\uD83D\uDEE1' },
+        { type: 'trail',   value: 'shadow',   label: 'Shadow Trail',     icon: '\uD83C\uDF11' },
+        { type: 'coins',   value: 750,  label: '750 Coins',        icon: '\uD83E\uDE99' },
+        { type: 'outfit',  value: 'celestial',label: 'Celestial Outfit', icon: '\uD83E\uDDE5' },
+        { type: 'icon',    value: 'crown',    label: 'Crown Icon',       icon: '\uD83D\uDC51' },
+        { type: 'powerup', value: 'shield',   qty: 3, label: '3x All Powerups', icon: '\uD83C\uDF81' },
+        { type: 'trail',   value: 'electric', label: 'Electric Trail',   icon: '\u26A1' },
+    ]
+};
+
+(function () {
+    var SEASON_DAYS = 30;
+    var now = Math.floor(Date.now() / 86400000);
+    try {
+        var saved = JSON.parse(localStorage.getItem('fr_season') || 'null');
+        if (saved && saved.seasonStart) {
+            var elapsed = now - saved.seasonStart;
+            if (elapsed < SEASON_DAYS) {
+                FR.SeasonPass.seasonStart = saved.seasonStart;
+                FR.SeasonPass.tiers = saved.tiers || [];
+                FR.SeasonPass.bonusClaimed = saved.bonusClaimed || false;
+            } else {
+                // Season expired — reset
+                FR.SeasonPass.seasonStart = now;
+                FR.SeasonPass.tiers = [];
+                FR.SeasonPass.bonusClaimed = false;
+            }
+        } else {
+            FR.SeasonPass.seasonStart = now;
+            FR.SeasonPass.tiers = [];
+        }
+    } catch (e) {
+        FR.SeasonPass.seasonStart = now;
+        FR.SeasonPass.tiers = [];
+    }
+    // Ensure tiers array has 30 entries
+    while (FR.SeasonPass.tiers.length < 30) FR.SeasonPass.tiers.push(false);
+})();
+
+FR.SeasonPass.save = function () {
+    try {
+        localStorage.setItem('fr_season', JSON.stringify({
+            seasonStart: FR.SeasonPass.seasonStart,
+            tiers: FR.SeasonPass.tiers,
+            bonusClaimed: FR.SeasonPass.bonusClaimed
+        }));
+    } catch (e) {}
+    if (FR.Fire && FR.Fire.isSignedIn()) FR.Fire.sync();
+};
 
 // ---- Settings (volume + key bindings) ----
 FR.Settings = {

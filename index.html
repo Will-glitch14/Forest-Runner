@@ -1694,6 +1694,291 @@
             margin-top: 8px;
             letter-spacing: 1px;
         }
+
+        /* ---- Inventory / Quests Tabs ---- */
+        .inv-tabs, .quests-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .inv-tab, .quests-tab {
+            padding: 7px 22px;
+            border: 2px solid rgba(92,184,92,0.25);
+            border-radius: 20px;
+            background: rgba(92,184,92,0.08);
+            color: rgba(255,255,255,0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .inv-tab:hover, .quests-tab:hover {
+            background: rgba(92,184,92,0.15);
+            border-color: rgba(92,184,92,0.4);
+        }
+        .inv-tab.active, .quests-tab.active {
+            background: rgba(92,184,92,0.2);
+            border-color: #5cb85c;
+            color: #5cb85c;
+        }
+
+        /* ---- Trail Grid ---- */
+        .trail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px;
+            width: 100%;
+            max-width: 540px;
+            margin-bottom: 12px;
+        }
+        .trail-cell {
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 10px 6px;
+            text-align: center;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .trail-cell:hover {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+        .trail-cell.equipped {
+            border-color: #5cb85c;
+            background: rgba(92,184,92,0.12);
+        }
+        .trail-preview {
+            font-size: 28px;
+            line-height: 1;
+        }
+        .trail-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+        }
+        .trail-status {
+            font-size: 10px;
+            color: #5cb85c;
+            font-weight: 700;
+        }
+        .trail-equip-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #5cb85c;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .trail-equip-btn:hover { background: #6ec86e; }
+        .trail-buy-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #ffd700;
+            color: #333;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .trail-buy-btn:hover { background: #ffe34d; }
+        .trail-buy-btn:disabled {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.3);
+            cursor: default;
+        }
+
+        /* ---- Achievement Grid ---- */
+        .ach-grid {
+            width: 100%;
+            max-width: 540px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .ach-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .ach-card:hover {
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.09);
+        }
+        .ach-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+            width: 36px;
+            text-align: center;
+        }
+        .ach-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .ach-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 4px;
+        }
+        .ach-tiers-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .ach-tier-dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: background 0.2s;
+        }
+        .ach-tier-dot.earned {
+            border-color: rgba(255,255,255,0.4);
+        }
+        .ach-tier-dot.claimed {
+            border-color: rgba(255,255,255,0.6);
+            box-shadow: 0 0 6px rgba(255,255,255,0.2);
+        }
+        .ach-progress-text {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+        }
+        .ach-claim-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #ffd700;
+            color: #333;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .ach-claim-btn:hover { background: #ffe34d; }
+        .ach-claim-btn:active { transform: scale(0.95); }
+        .ach-complete {
+            font-size: 18px;
+            color: #5cb85c;
+            flex-shrink: 0;
+            padding: 0 8px;
+        }
+        .ach-locked {
+            font-size: 16px;
+            flex-shrink: 0;
+            padding: 0 8px;
+            opacity: 0.4;
+        }
+
+        /* ---- Season Pass ---- */
+        .pass-season-info {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .pass-level-display {
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: #5cb85c;
+            margin-bottom: 14px;
+        }
+        .pass-tier-list {
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .pass-tier-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .pass-tier-card.unlocked {
+            border-color: rgba(92,184,92,0.3);
+            background: rgba(92,184,92,0.08);
+        }
+        .pass-tier-card.claimed {
+            border-color: rgba(92,184,92,0.2);
+            background: rgba(92,184,92,0.05);
+            opacity: 0.7;
+        }
+        .pass-tier-card.locked {
+            opacity: 0.45;
+        }
+        .pass-tier-num {
+            font-family: 'Russo One', sans-serif;
+            font-size: 16px;
+            color: rgba(255,255,255,0.5);
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .pass-tier-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .pass-tier-label {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+        }
+        .pass-claim-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #ffd700;
+            color: #333;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            pointer-events: auto;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .pass-claim-btn:hover { background: #ffe34d; }
+        .pass-claim-btn:active { transform: scale(0.95); }
+        .pass-claimed-check {
+            font-size: 18px;
+            color: #5cb85c;
+            flex-shrink: 0;
+            padding: 0 8px;
+        }
+        .pass-lock {
+            font-size: 16px;
+            flex-shrink: 0;
+            padding: 0 8px;
+        }
     </style>
 </head>
 <body>
@@ -1798,24 +2083,46 @@
         <!-- Inventory Screen -->
         <div id="inventory-screen" class="screen hidden">
             <h1>INVENTORY</h1>
-            <div class="shop-section-title">My Outfits</div>
-            <div class="shop-grid" id="inv-outfits"></div>
-            <div class="shop-section-title">My Icons</div>
-            <div class="shop-icon-grid" id="inv-icons"></div>
+            <div class="inv-tabs">
+                <button class="inv-tab active" id="inv-tab-items">Items</button>
+                <button class="inv-tab" id="inv-tab-ach">Achievements</button>
+            </div>
+            <div id="inv-items-content">
+                <div class="shop-section-title">My Outfits</div>
+                <div class="shop-grid" id="inv-outfits"></div>
+                <div class="shop-section-title">My Icons</div>
+                <div class="shop-icon-grid" id="inv-icons"></div>
+                <div class="shop-section-title">Trails</div>
+                <div class="trail-grid" id="trail-grid"></div>
+            </div>
+            <div id="inv-ach-content" style="display:none;width:100%;max-width:540px;">
+                <div class="ach-grid" id="ach-grid"></div>
+            </div>
             <button class="shop-back-btn" id="inv-back">Back to Shop</button>
         </div>
 
         <!-- Quests Screen -->
         <div id="quests-screen" class="screen hidden">
-            <h1>DAILY QUESTS</h1>
-            <div class="xp-bar-wrap">
-                <span class="xp-level-badge" id="quests-xp-level">Lv. 1</span>
-                <div class="xp-bar-track"><div class="xp-bar-fill" id="quests-xp-fill" style="width:0%"></div></div>
-                <span class="xp-bar-text" id="quests-xp-text">0 / 200 XP</span>
+            <h1>QUESTS</h1>
+            <div class="quests-tabs">
+                <button class="quests-tab active" id="quests-tab-daily">Daily Quests</button>
+                <button class="quests-tab" id="quests-tab-pass">Season Pass</button>
             </div>
-            <div class="quest-list" id="quests-list"></div>
-            <div class="quest-bonus" id="quests-bonus-hint">Complete all 5 for bonus 100 XP!</div>
-            <button class="quest-complete-all-btn" id="quests-bonus-btn" disabled>Claim Bonus</button>
+            <div id="quests-daily-content">
+                <div class="xp-bar-wrap">
+                    <span class="xp-level-badge" id="quests-xp-level">Lv. 1</span>
+                    <div class="xp-bar-track"><div class="xp-bar-fill" id="quests-xp-fill" style="width:0%"></div></div>
+                    <span class="xp-bar-text" id="quests-xp-text">0 / 200 XP</span>
+                </div>
+                <div class="quest-list" id="quests-list"></div>
+                <div class="quest-bonus" id="quests-bonus-hint">Complete all 5 for bonus 100 XP!</div>
+                <button class="quest-complete-all-btn" id="quests-bonus-btn" disabled>Claim Bonus</button>
+            </div>
+            <div id="quests-pass-content" style="display:none;width:100%;max-width:440px;">
+                <div class="pass-season-info" id="pass-days-left">Season ends in 30 days</div>
+                <div class="pass-level-display" id="pass-current-level">Level 1 / 30</div>
+                <div class="pass-tier-list" id="pass-tier-list"></div>
+            </div>
             <button class="shop-back-btn" id="quests-back">Back</button>
         </div>
 
