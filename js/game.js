@@ -835,18 +835,6 @@
             }
             return;
         }
-        var buyBtn = e.target.closest('[data-action="buy-trail"]');
-        if (buyBtn) {
-            var bkey = buyBtn.getAttribute('data-key');
-            if (FR.Trails.types[bkey] && !FR.Trails.types[bkey].owned && FR.Shop.wallet >= FR.Trails.cost) {
-                FR.Shop.wallet -= FR.Trails.cost;
-                FR.Trails.types[bkey].owned = true;
-                FR.Shop.save();
-                FR.Trails.save();
-                renderTrails();
-            }
-            return;
-        }
     });
 
     // Achievement claim handler
@@ -964,7 +952,7 @@
                     html += '<button class="trail-equip-btn" data-action="equip-trail" data-key="' + k + '">Equip</button>';
                 }
             } else {
-                html += '<button class="trail-buy-btn" data-action="buy-trail" data-key="' + k + '"' + (FR.Shop.wallet >= trails.cost ? '' : ' disabled') + '>' + trails.cost + ' Buy</button>';
+                html += '<span class="trail-status locked">\uD83D\uDD12 Locked</span>';
             }
             html += '</div>';
         }

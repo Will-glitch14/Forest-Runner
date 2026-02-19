@@ -401,10 +401,18 @@ FR.Trails = {
         shadow:   { name: 'Shadow',   color: 0x2a2a3a, color2: 0x555566, owned: false, icon: '\uD83C\uDF11' },
         electric: { name: 'Electric', color: 0x3388ff, color2: 0x88ddff, owned: false, icon: '\u26A1' },
         nature:   { name: 'Nature',   color: 0x33aa22, color2: 0x88dd44, owned: false, icon: '\uD83C\uDF3F' },
+        cherry:   { name: 'Cherry Blossom', color: 0xff69b4, color2: 0xffb7d5, owned: false, icon: '\uD83C\uDF38' },
+        cosmic:   { name: 'Cosmic',   color: 0x9933ff, color2: 0xcc88ff, owned: false, icon: '\uD83C\uDF0C' },
+        lava:     { name: 'Lava',     color: 0xff2200, color2: 0xff6600, owned: false, icon: '\uD83C\uDF0B' },
+        ocean:    { name: 'Ocean',    color: 0x0066cc, color2: 0x33aaff, owned: false, icon: '\uD83C\uDF0A' },
+        toxic:    { name: 'Toxic',    color: 0x44ff00, color2: 0xaaff44, owned: false, icon: '\u2623\uFE0F' },
+        frost:    { name: 'Frost',    color: 0xaaddff, color2: 0xffffff, owned: false, icon: '\uD83E\uDDCA' },
+        sunset:   { name: 'Sunset',   color: 0xff6633, color2: 0xffcc00, owned: false, icon: '\uD83C\uDF05' },
+        phantom:  { name: 'Phantom',  color: 0x6644aa, color2: 0x9977cc, owned: false, icon: '\uD83D\uDC7B' },
     },
     active: 'none',
     cost: 300,
-    CRATE_COST: 500
+    CRATE_COST: 1000
 };
 
 (function () {
