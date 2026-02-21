@@ -404,6 +404,15 @@ FR.Effects = (function () {
     var TRAIL_MAX = 60;
     var TRAIL_INTERVAL = 0.03;
     var trailGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+    var trailGeoSphere = new THREE.SphereGeometry(0.14, 6, 5);
+    var trailGeoDiamond = new THREE.OctahedronGeometry(0.15);
+    var trailGeoDisc = new THREE.CircleGeometry(0.18, 8);
+    var trailShapes = {
+        fire: 'sphere', lava: 'sphere', ember: 'sphere', bloodmoon: 'sphere', sunset: 'sphere',
+        ice: 'diamond', frost: 'diamond', tundra: 'diamond', electric: 'diamond', cosmic: 'diamond',
+        nature: 'disc', petal: 'disc', cherry: 'disc', pollen: 'disc', moss2: 'disc', feather: 'disc', honey: 'disc',
+    };
+    var trailGeoMap = { sphere: trailGeoSphere, diamond: trailGeoDiamond, disc: trailGeoDisc };
 
     function updateTrail(dt, playerPos, speed, isGrounded) {
         var trail = FR.Trails;
@@ -422,8 +431,11 @@ FR.Effects = (function () {
             } else {
                 color = new THREE.Color(Math.random() < 0.5 ? tType.color : tType.color2);
             }
-            var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
-            var mesh = new THREE.Mesh(trailGeo, mat);
+            var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+            var activeKey = trail.active;
+            var shapeKey = trailShapes[activeKey];
+            var geo = (shapeKey && trailGeoMap[shapeKey]) || trailGeo;
+            var mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(
                 playerPos.x + (Math.random() - 0.5) * 0.4,
                 playerPos.y + 0.3 + Math.random() * 0.6,
@@ -439,7 +451,8 @@ FR.Effects = (function () {
                     -(speed * 0.05 + Math.random() * 0.5)
                 ),
                 life: 0.7 + Math.random() * 0.4,
-                maxLife: 1.1
+                maxLife: 1.1,
+                shape: shapeKey || 'box'
             });
         }
         if (trailTimer >= TRAIL_INTERVAL) trailTimer = 0;
@@ -458,6 +471,12 @@ FR.Effects = (function () {
             var t = p.life / p.maxLife;
             p.mesh.material.opacity = t * 0.9;
             p.mesh.scale.setScalar(t * 1.0 + 0.3);
+            if (p.shape === 'diamond') {
+                p.mesh.rotation.x += dt * 4;
+                p.mesh.rotation.y += dt * 3;
+            } else if (p.shape === 'disc') {
+                p.mesh.rotation.z += dt * 3;
+            }
         }
     }
 

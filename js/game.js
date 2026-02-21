@@ -663,6 +663,17 @@
         ui.hudCoins.textContent = S.coins;
         var mult = (S.speed / C.INIT_SPEED).toFixed(1);
         ui.hudSpeed.textContent = mult + 'x';
+        updatePowerupBadges();
+    }
+
+    function updatePowerupBadges() {
+        var el = document.getElementById('hud-powerups');
+        if (!el) return;
+        var html = '';
+        if (S.shieldActive) html += '<span class="pu-badge shield">\uD83D\uDEE1\uFE0F Shield</span>';
+        if (S.magnetActive) html += '<span class="pu-badge magnet">\uD83E\uDDF2 Magnet</span>';
+        if (S.doubleCoins) html += '<span class="pu-badge double">\u00D72 Coins</span>';
+        el.innerHTML = html;
     }
 
     // ============================================================
@@ -2257,6 +2268,8 @@
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
 
         W.removeShield();
+        W.removeMagnet();
+        W.removeDoubleCoins();
 
         // Rebuild world for title screen background
         W.initSegments();
@@ -2388,6 +2401,8 @@
         S.mpInvincibleTimer = 0;
 
         W.removeShield();
+        W.removeMagnet();
+        W.removeDoubleCoins();
 
         // Clear and rebuild world
         clearWorld();
@@ -2594,11 +2609,13 @@
             shop.powerups.magnet.qty--;
             shop.powerups.magnet.selected = false;
             S.magnetActive = true;
+            W.addMagnet();
         }
         if (shop.powerups.doubleCoins.selected && shop.powerups.doubleCoins.qty > 0) {
             shop.powerups.doubleCoins.qty--;
             shop.powerups.doubleCoins.selected = false;
             S.doubleCoins = true;
+            W.addDoubleCoins();
         }
         if (shop.powerups.headStart.selected && shop.powerups.headStart.qty > 0) {
             shop.powerups.headStart.qty--;
@@ -2692,8 +2709,10 @@
             ui.goNewBest.classList.remove('show');
         }
 
-        // Clean up shield visual if active
+        // Clean up power-up visuals
         W.removeShield();
+        W.removeMagnet();
+        W.removeDoubleCoins();
 
         ui.overScr.classList.remove('hidden');
         ui.hud.classList.remove('visible');
@@ -2724,8 +2743,10 @@
         S.shieldActive = false; S.magnetActive = false; S.doubleCoins = false;
         S.jumpsThisRun = 0; S.slidesThisRun = 0;
 
-        // Clean up shield visual and trail
+        // Clean up power-up visuals and trail
         W.removeShield();
+        W.removeMagnet();
+        W.removeDoubleCoins();
         E.clearTrail();
 
         // Rebuild
@@ -2841,10 +2862,17 @@
         E.updateSpeedLines(dt, S.speed, S.pZ);
         E.updateLandingRings(dt);
         W.updateShieldVisual(dt);
+        W.updateMagnetVisual(dt);
+        W.updateDoubleCoinsVisual(dt);
         E.updateShake(dt);
         E.updateTrail(dt, FR.player.group.position, S.speed, !S.jumping && !S.sliding);
         E.updateRain(dt, S.pZ, S.gTime);
         A.updateRainAmbient(E.isRaining());
+
+        // Obstacle animations
+        for (var oa = 0; oa < FR.obsList.length; oa++) {
+            W.animateObstacle(FR.obsList[oa], dt, S.gTime);
+        }
 
         // Near-miss detection
         checkNearMiss(dt);
@@ -2960,9 +2988,18 @@
         E.updateStars(dt, S.pZ, S.gTime, nightAmount);
         E.updateSpeedLines(dt, S.speed, S.pZ);
         E.updateLandingRings(dt);
+        W.updateShieldVisual(dt);
+        W.updateMagnetVisual(dt);
+        W.updateDoubleCoinsVisual(dt);
         E.updateShake(dt);
+        E.updateTrail(dt, FR.player.group.position, S.speed, !S.jumping && !S.sliding);
         E.updateRain(dt, S.pZ, S.gTime);
         A.updateRainAmbient(E.isRaining());
+
+        // Obstacle animations
+        for (var oa = 0; oa < FR.obsList.length; oa++) {
+            W.animateObstacle(FR.obsList[oa], dt, S.gTime);
+        }
 
         // Near-miss detection
         checkNearMiss(dt);

@@ -630,6 +630,7 @@ FR.World = (function () {
         }
 
         g.position.x = C.LANES[lane];
+        g.userData = { animType: 'log', rotPhase: Math.random() * Math.PI * 2, rotSpeed: 1.0 + Math.random() * 1.0 };
         return { mesh: g, type: 'low', lane: lane, z: 0 };
     }
 
@@ -690,7 +691,9 @@ FR.World = (function () {
                 2.6 - vLen / 2,
                 (Math.random() - 0.5) * 0.35
             );
-            v.rotation.z = (Math.random() - 0.5) * 0.12;
+            var baseRotZ = (Math.random() - 0.5) * 0.12;
+            v.rotation.z = baseRotZ;
+            v.userData = { isVine: true, baseRotZ: baseRotZ, swayPhase: Math.random() * Math.PI * 2, swaySpeed: 1.5 + Math.random() * 1.5 };
             g.add(v);
 
             // Small leaves on vine tips
@@ -777,6 +780,9 @@ FR.World = (function () {
     // SHIELD VISUAL
     // ============================================================
     var shieldMesh = null;
+    var magnetMesh = null;
+    var doubleCoinsMesh = null;
+    var doubleCoinsLight = null;
 
     function addShield() {
         if (shieldMesh) return;
@@ -810,6 +816,110 @@ FR.World = (function () {
     }
 
     // ============================================================
+    // MAGNET VISUAL
+    // ============================================================
+    function addMagnet() {
+        if (magnetMesh) return;
+        var geo = new THREE.TorusGeometry(1.3, 0.08, 8, 24);
+        var mat = new THREE.MeshPhongMaterial({
+            color: 0xff3333,
+            transparent: true,
+            opacity: 0.25,
+            emissive: 0xff2222,
+            emissiveIntensity: 0.5,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        magnetMesh = new THREE.Mesh(geo, mat);
+        magnetMesh.rotation.x = Math.PI / 2;
+        magnetMesh.position.y = 0.3;
+        FR.player.group.add(magnetMesh);
+    }
+
+    function removeMagnet() {
+        if (!magnetMesh) return;
+        FR.player.group.remove(magnetMesh);
+        magnetMesh.geometry.dispose();
+        magnetMesh.material.dispose();
+        magnetMesh = null;
+    }
+
+    function updateMagnetVisual(dt) {
+        if (!magnetMesh) return;
+        magnetMesh.rotation.z += dt * 2.0;
+        var s = 1.0 + Math.sin(FR.S.gTime * 4) * 0.08;
+        magnetMesh.scale.set(s, s, 1);
+        magnetMesh.material.opacity = 0.2 + Math.sin(FR.S.gTime * 3) * 0.08;
+    }
+
+    // ============================================================
+    // DOUBLE COINS VISUAL
+    // ============================================================
+    function addDoubleCoins() {
+        if (doubleCoinsMesh) return;
+        var geo = new THREE.TorusGeometry(1.1, 0.06, 8, 24);
+        var mat = new THREE.MeshPhongMaterial({
+            color: 0xffd700,
+            transparent: true,
+            opacity: 0.25,
+            emissive: 0xffaa00,
+            emissiveIntensity: 0.5,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        doubleCoinsMesh = new THREE.Mesh(geo, mat);
+        doubleCoinsMesh.rotation.x = Math.PI / 3;
+        doubleCoinsMesh.position.y = 1.5;
+        FR.player.group.add(doubleCoinsMesh);
+
+        doubleCoinsLight = new THREE.PointLight(0xffd700, 0.6, 4);
+        doubleCoinsLight.position.y = 1.5;
+        FR.player.group.add(doubleCoinsLight);
+    }
+
+    function removeDoubleCoins() {
+        if (doubleCoinsMesh) {
+            FR.player.group.remove(doubleCoinsMesh);
+            doubleCoinsMesh.geometry.dispose();
+            doubleCoinsMesh.material.dispose();
+            doubleCoinsMesh = null;
+        }
+        if (doubleCoinsLight) {
+            FR.player.group.remove(doubleCoinsLight);
+            doubleCoinsLight.dispose();
+            doubleCoinsLight = null;
+        }
+    }
+
+    function updateDoubleCoinsVisual(dt) {
+        if (!doubleCoinsMesh) return;
+        doubleCoinsMesh.rotation.x += dt * 1.2;
+        doubleCoinsMesh.rotation.y += dt * 0.8;
+        doubleCoinsMesh.material.opacity = 0.2 + Math.sin(FR.S.gTime * 3.5) * 0.08;
+        if (doubleCoinsLight) {
+            doubleCoinsLight.intensity = 0.5 + Math.sin(FR.S.gTime * 3.5) * 0.2;
+        }
+    }
+
+    // ============================================================
+    // OBSTACLE ANIMATION
+    // ============================================================
+    function animateObstacle(obs, dt, gTime) {
+        if (!obs || !obs.mesh) return;
+        var ud = obs.mesh.userData;
+        if (ud && ud.animType === 'log') {
+            obs.mesh.children[0].rotation.x = Math.sin(gTime * ud.rotSpeed + ud.rotPhase) * 0.04;
+        }
+        if (obs.type === 'high') {
+            obs.mesh.traverse(function (c) {
+                if (c.userData && c.userData.isVine) {
+                    c.rotation.z = c.userData.baseRotZ + Math.sin(gTime * c.userData.swaySpeed + c.userData.swayPhase) * 0.15;
+                }
+            });
+        }
+    }
+
+    // ============================================================
     // PUBLIC API
     // ============================================================
     return {
@@ -828,5 +938,12 @@ FR.World = (function () {
         addShield:       addShield,
         removeShield:    removeShield,
         updateShieldVisual: updateShieldVisual,
+        addMagnet:       addMagnet,
+        removeMagnet:    removeMagnet,
+        updateMagnetVisual: updateMagnetVisual,
+        addDoubleCoins:  addDoubleCoins,
+        removeDoubleCoins: removeDoubleCoins,
+        updateDoubleCoinsVisual: updateDoubleCoinsVisual,
+        animateObstacle: animateObstacle,
     };
 })();

@@ -80,6 +80,32 @@
         .hud-left, .hud-right { display: flex; flex-direction: column; gap: 4px; }
         .hud-right { align-items: flex-end; }
 
+        /* ---- Power-Up HUD Badges ---- */
+        #hud-powerups {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .pu-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            border: 1.5px solid;
+            animation: puPulse 1.5s ease-in-out infinite;
+        }
+        .pu-badge.shield { background: rgba(68,170,255,0.2); border-color: rgba(68,170,255,0.6); }
+        .pu-badge.magnet { background: rgba(255,60,60,0.2); border-color: rgba(255,60,60,0.6); }
+        .pu-badge.double { background: rgba(255,215,0,0.2); border-color: rgba(255,215,0,0.6); color: #ffd700; }
+        @keyframes puPulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
         .hud-label {
             font-size: 11px;
             font-weight: 700;
@@ -2063,6 +2089,7 @@
                     <span class="coin-icon"></span>
                     <span class="coin-count" id="hud-coins">0</span>
                 </div>
+                <div id="hud-powerups"></div>
             </div>
             <div class="hud-right">
                 <div class="hud-speed" id="hud-speed">1.0x</div>
@@ -2369,8 +2396,8 @@
     <script src="js/config.js?v=5"></script>
     <script src="js/firebase.js?v=3"></script>
     <script src="js/audio.js?v=3"></script>
-    <script src="js/world.js?v=3"></script>
-    <script src="js/effects.js?v=4"></script>
-    <script src="js/game.js?v=3"></script>
+    <script src="js/world.js?v=4"></script>
+    <script src="js/effects.js?v=5"></script>
+    <script src="js/game.js?v=4"></script>
 </body>
 </html>
